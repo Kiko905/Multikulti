@@ -107,3 +107,10 @@ InitTestScene*.unity*
 
 # Auto-generated cache in Assets folder
 /[Aa]ssets/[Ss]ceneDependencyCache*
+
+# macOS a editory
+.DS_Store
+.vscode/
+
+# Dáta z playtestu (SCRUM-93) sa necommitujú
+*.jsonl
