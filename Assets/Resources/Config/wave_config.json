@@ -1,0 +1,66 @@
+{
+  "_notes": "Tunable wave-system parameters (SCRUM-90). Values come from the defaults written in the Jira stories; 0 means a placeholder still waiting for balance values (SCRUM-96). Percentages are fractions (0.25 = 25 %). A file with the same name in Application.persistentDataPath overrides these values without a new build.",
+  "schema_version": 1,
+
+  "wave": {
+    "_source": "SCRUM-24, SCRUM-25",
+    "wave_timer": 90
+  },
+
+  "service": {
+    "_source": "SCRUM-31, SCRUM-38, SCRUM-86",
+    "service_time": 0,
+    "utilization_worker": 1.0,
+    "utilization_empty": 0.33
+  },
+
+  "need_states": {
+    "_source": "SCRUM-32",
+    "bottleneck_threshold": 0,
+    "bottleneck_hysteresis_s": 0
+  },
+
+  "satisfaction": {
+    "_source": "SCRUM-43, SCRUM-44; rating_thresholds are the 6 values listed in SCRUM-44, lowest first",
+    "unit_floor": 0.25,
+    "wave_floor": 0.40,
+    "rating_thresholds": [0.40, 0.55, 0.70, 0.80, 0.90, 1.00]
+  },
+
+  "rewards": {
+    "_source": "SCRUM-45; one multiplier and one Energy amount per rating, same order as rating_thresholds",
+    "coins_per_unit": 0,
+    "rating_coin_multipliers": [0, 0, 0, 0, 0, 0],
+    "energy_per_rating": [0, 0, 0, 0, 0, 0]
+  },
+
+  "buildings": {
+    "_source": "SCRUM-50; upgrade_prices[i] is the Coins price of upgrading from level i+1 to level i+2",
+    "capacity_by_level": [3, 5, 7],
+    "upgrade_prices": [0, 0]
+  },
+
+  "unlocks": {
+    "_source": "SCRUM-51, SCRUM-54",
+    "pool_after_wave": 3,
+    "pool_price": 0,
+    "bungalows_after_wave": 6,
+    "bungalows_price": 0,
+    "debut_need_volume_ratio": 0.5
+  },
+
+  "speed_up": {
+    "_source": "SCRUM-57",
+    "energy_cost": 3,
+    "duration_s": 15,
+    "service_time_multiplier": 0.5,
+    "max_per_building_per_wave": 1
+  },
+
+  "sudden_rush": {
+    "_source": "SCRUM-60",
+    "wave": 2,
+    "extra_units": 6,
+    "duration_s": 10
+  }
+}
