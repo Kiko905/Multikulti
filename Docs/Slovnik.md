@@ -1,11 +1,11 @@
 # Slovník projektu Multikulti
 
-**Stav: NÁVRH (SCRUM-91).** Pojmy sú prevzaté z Jira úloh a z `tools/config.json`. Zoltán ich skontroluje a doplní.
+**Stav: NÁVRH (SCRUM-91).** Pojmy sú prevzaté z Jira úloh a z `Assets/Resources/Config/wave_config.json`. Zoltán ich skontroluje a doplní.
 
 ## Pravidlá
 - Názvy v kóde a v UI používajú len pojmy z tohto slovníka.
 - C#: typy, metódy, vlastnosti a hodnoty enumov v PascalCase (`WavePaused`), lokálne premenné a parametre v camelCase (`waveTimer`). Pravidlá sú v `.editorconfig`.
-- Kľúče v konfiguračných JSON súboroch sú v snake_case (`wave_timer`), rovnako ako v `tools/config.json`.
+- Kľúče v konfiguračných JSON súboroch sú v snake_case (`wave_timer`), rovnako ako v `Assets/Resources/Config/wave_config.json`.
 - Stavy zapísané v Jire veľkými písmenami (`WAVE_PAUSED`) sa v C# píšu ako hodnota enumu v PascalCase (`WavePaused`).
 - Texty v UI sú v angličtine a idú cez Localization tabuľku `UI`.
 
@@ -44,7 +44,7 @@ Kontrolu robí `Assets/Editor/Naming/BannedTermsCheck.cs`: pred každým buildom
 | IN_PROGRESS | `InProgress` | beží |
 | COMPLETED | `Completed` | splnený |
 
-## Budovy a needy (`tools/config.json`)
+## Budovy a needy
 | Budova | C# | Need | C# |
 | --- | --- | --- | --- |
 | Reception | `Reception` | Rooms | `Rooms` |
@@ -79,5 +79,5 @@ Kontrolu robí `Assets/Editor/Naming/BannedTermsCheck.cs`: pred každým buildom
 | VIP | `Vip` | špeciálny hosť s requestami | SCRUM-61 |
 | Guest Request Board | `GuestRequestBoard` | požiadavky VIP hosťa | SCRUM-62 |
 
-## Treba zjednotiť
-- Utilization budovy s Workerom: `tools/config.json` používa `utilization_staffed`, `Assets/Resources/Config/wave_config.json` (SCRUM-90) používa `utilization_worker`. Vybrať jeden názov.
+## Zjednotené
+- Utilization budovy s Workerom: `utilization_worker` (od SCRUM-96 existuje len jeden config, `tools/config.json` bol zmazaný).
