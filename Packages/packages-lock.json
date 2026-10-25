@@ -209,6 +209,13 @@
         "com.unity.modules.physics": "1.0.0"
       }
     },
+    "io.sentry.unity": {
+      "version": "https://github.com/getsentry/unity.git#4.11.0",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "2be406a0f02211867d54f520a2ad506d61c795a2"
+    },
     "com.unity.modules.accessibility": {
       "version": "1.0.0",
       "depth": 0,
