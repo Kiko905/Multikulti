@@ -30,6 +30,7 @@ namespace Multikulti.Config
         [SerializeField] UnlockSettings unlocks = new UnlockSettings();
         [SerializeField] SpeedUpSettings speed_up = new SpeedUpSettings();
         [SerializeField] SuddenRushSettings sudden_rush = new SuddenRushSettings();
+        [SerializeField] WaveDefinition[] waves = Array.Empty<WaveDefinition>();
 
         public int SchemaVersion => schema_version;
         public WaveSettings Wave => wave;
@@ -41,6 +42,8 @@ namespace Multikulti.Config
         public UnlockSettings Unlocks => unlocks;
         public SpeedUpSettings SpeedUp => speed_up;
         public SuddenRushSettings SuddenRush => sudden_rush;
+        /// <summary>Scripted waves, wave 1 first (build document §4.8).</summary>
+        public IReadOnlyList<WaveDefinition> Waves => waves;
 
         /// <summary>The loaded configuration; loads it on first use.</summary>
         public static WaveConfig Current => s_Current ??= Load();
@@ -106,11 +109,17 @@ namespace Multikulti.Config
             RequirePositive(problems, "need_states.bottleneck_threshold", need_states.BottleneckThreshold);
             RequirePositive(problems, "need_states.bottleneck_hysteresis_s", need_states.BottleneckHysteresisSeconds);
 
-            // SCRUM-96 (WR1): unit_floor < wave_floor.
+            // SCRUM-96 (WR1): unit_floor < wave_floor < 3★ threshold.
             if (satisfaction.UnitFloor >= satisfaction.WaveFloor)
                 problems.Add("satisfaction.unit_floor must be lower than satisfaction.wave_floor.");
             RequireCount(problems, "satisfaction.rating_thresholds", satisfaction.RatingThresholds, RatingCount);
             RequireAscending(problems, "satisfaction.rating_thresholds", satisfaction.RatingThresholds);
+            if (satisfaction.RatingThresholds.Count >= 3 && satisfaction.WaveFloor >= satisfaction.RatingThresholds[2])
+                problems.Add("satisfaction.wave_floor must be lower than the 3★ threshold (rating_thresholds[2]).");
+            RequirePositive(problems, "satisfaction.patience_grace_s", satisfaction.PatienceGraceSeconds);
+            if (satisfaction.PatienceFloorAfterSeconds <= satisfaction.PatienceGraceSeconds)
+                problems.Add("satisfaction.patience_floor_after_s must be greater than satisfaction.patience_grace_s.");
+            RequirePositive(problems, "satisfaction.ocean_view_weight", satisfaction.OceanViewWeight);
 
             RequirePositive(problems, "rewards.coins_per_unit", rewards.CoinsPerUnit);
             RequireCount(problems, "rewards.rating_coin_multipliers", rewards.RatingCoinMultipliers, RatingCount);
@@ -123,6 +132,14 @@ namespace Multikulti.Config
 
             RequirePositive(problems, "unlocks.pool_price", unlocks.PoolPrice);
             RequirePositive(problems, "unlocks.bungalows_price", unlocks.BungalowsPrice);
+
+            if (waves.Length == 0)
+                problems.Add("waves is empty.");
+            for (var i = 0; i < waves.Length; i++)
+            {
+                if (waves[i].Wave != i + 1)
+                    problems.Add($"waves[{i}].wave is {waves[i].Wave}, expected {i + 1}.");
+            }
 
             return problems;
         }
@@ -236,6 +253,9 @@ namespace Multikulti.Config
         [SerializeField] float unit_floor;
         [SerializeField] float wave_floor;
         [SerializeField] float[] rating_thresholds = Array.Empty<float>();
+        [SerializeField] float patience_grace_s;
+        [SerializeField] float patience_floor_after_s;
+        [SerializeField] float ocean_view_weight;
 
         /// <summary>Lowest contribution of one unit, as a fraction.</summary>
         public float UnitFloor => unit_floor;
@@ -243,6 +263,12 @@ namespace Multikulti.Config
         public float WaveFloor => wave_floor;
         /// <summary>Satisfaction thresholds for the ratings, lowest first, as fractions.</summary>
         public IReadOnlyList<float> RatingThresholds => rating_thresholds;
+        /// <summary>Waiting up to this many seconds (arrival → seated) contributes 100 %.</summary>
+        public float PatienceGraceSeconds => patience_grace_s;
+        /// <summary>From this many seconds of waiting a unit contributes only unit_floor; linear in between.</summary>
+        public float PatienceFloorAfterSeconds => patience_floor_after_s;
+        /// <summary>Satisfaction weight of an Ocean View unit; volume needs weigh 1.0.</summary>
+        public float OceanViewWeight => ocean_view_weight;
     }
 
     /// <summary>Coins and Energy after a wave (SCRUM-45).</summary>
@@ -313,12 +339,34 @@ namespace Multikulti.Config
     public sealed class SuddenRushSettings
     {
         [SerializeField] int wave;
+        [SerializeField] float time_s;
         [SerializeField] int extra_units;
         [SerializeField] float duration_s;
 
         /// <summary>Wave number in which the event starts.</summary>
         public int Wave => wave;
+        /// <summary>Seconds into the arrival phase when the rush starts.</summary>
+        public float TimeSeconds => time_s;
         public int ExtraUnits => extra_units;
         public float DurationSeconds => duration_s;
+    }
+
+    /// <summary>One scripted wave: demand_total per need, 0 = the need is not in this wave (build document §4.8).</summary>
+    [Serializable]
+    public sealed class WaveDefinition
+    {
+        [SerializeField] int wave;
+        [SerializeField] int rooms;
+        [SerializeField] int drinks;
+        [SerializeField] int food;
+        [SerializeField] int relax;
+        [SerializeField] int ocean_view;
+
+        public int Wave => wave;
+        public int Rooms => rooms;
+        public int Drinks => drinks;
+        public int Food => food;
+        public int Relax => relax;
+        public int OceanView => ocean_view;
     }
 }
