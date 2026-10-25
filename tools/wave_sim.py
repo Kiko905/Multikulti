@@ -21,9 +21,12 @@ Kontroluje hard pravidla:
   WR8  plne pripraveny rezort (vsetky budovy na max leveli) MUSI dosiahnut
        5★ v kazdej vlne bez Energy
 
-Pouzitie:
-  python3 wave_sim.py                 # cita config.json vedla skriptu
-  python3 wave_sim.py cesta/config.json
+Parametre cita z toho isteho suboru ako hra (SCRUM-90):
+  Assets/Resources/Config/wave_config.json
+
+Pouzitie (z korena repa):
+  python3 tools/wave_sim.py                       # cita wave_config.json hry
+  python3 tools/wave_sim.py cesta/wave_config.json  # napr. override z playtestu
 
 Exit code 0 = vsetky pravidla OK, 1 = porusenie (vhodne do build pipeline).
 """
@@ -33,6 +36,69 @@ import json
 import sys
 from itertools import combinations
 from pathlib import Path
+
+
+# ---------------------------------------------------------------- config
+
+DEFAULT_CONFIG = Path(__file__).resolve().parent.parent / "Assets" / "Resources" / "Config" / "wave_config.json"
+
+# Pevne veci z build dokumentu (spec, nie tuning)
+BUILDINGS = {               # budova -> need (§4.5)
+    "Reception": "Rooms",
+    "Restaurant": "Food",
+    "BeachBar": "Drinks",
+    "Pool": "Relax",
+    "Bungalows": "OceanView",
+}
+WAVE_KEYS = {"rooms": "Rooms", "drinks": "Drinks", "food": "Food",
+             "relax": "Relax", "ocean_view": "OceanView"}
+WR7_FROM_WAVE = 3           # WR7 plati od Wave 3 (§4.8)
+RATING_NAMES = ["1", "2", "3", "4", "5", "Perfect"]
+
+
+def load_config(path):
+    """Nacita wave_config.json hry a prevedie ho na tvar, s ktorym pocita simulacia."""
+    raw = json.loads(Path(path).read_text(encoding="utf-8"))
+    sat = raw["satisfaction"]
+    rush = raw["sudden_rush"]
+    unlocks = raw["unlocks"]
+
+    waves = []
+    for w in raw["waves"]:
+        row = {"wave": w["wave"]}
+        for key, need in WAVE_KEYS.items():
+            if w.get(key, 0) > 0:
+                row[need] = w[key]
+        waves.append(row)
+
+    weights = {need: 1.0 for need in BUILDINGS.values()}
+    weights["OceanView"] = sat["ocean_view_weight"]
+
+    return {
+        "wave_timer": raw["wave"]["wave_timer"],
+        "service_time": raw["service"]["service_time"],
+        "utilization_staffed": raw["service"]["utilization_worker"],
+        "utilization_empty": raw["service"]["utilization_empty"],
+        "capacity_by_level": raw["buildings"]["capacity_by_level"],
+        "max_level_prototype": len(raw["buildings"]["capacity_by_level"]),
+        "patience_grace": sat["patience_grace_s"],
+        "patience_floor_after": sat["patience_floor_after_s"],
+        "unit_floor": sat["unit_floor"],
+        "wave_floor": sat["wave_floor"],
+        "rating_thresholds": dict(zip(RATING_NAMES, sat["rating_thresholds"])),
+        "need_weights": weights,
+        "buildings": BUILDINGS,
+        "rush": {
+            "wave": rush["wave"],
+            "time_s": rush["time_s"],
+            "units": rush["extra_units"],
+            "duration_s": rush["duration_s"],
+        },
+        # debutove vlny = prva vlna po unlocku (§4.8, pravidlo 2)
+        "debut_waves": [unlocks["pool_after_wave"] + 1, unlocks["bungalows_after_wave"] + 1],
+        "wr7_from_wave": WR7_FROM_WAVE,
+        "waves": waves,
+    }
 
 
 # ---------------------------------------------------------------- model
@@ -170,9 +236,19 @@ def check_static_rules(cfg):
 
 
 def main():
-    cfg_path = Path(sys.argv[1]) if len(sys.argv) > 1 else Path(__file__).with_name("config.json")
-    cfg = json.loads(cfg_path.read_text(encoding="utf-8"))
+    cfg_path = Path(sys.argv[1]) if len(sys.argv) > 1 else DEFAULT_CONFIG
+    try:
+        cfg = load_config(cfg_path)
+    except KeyError as missing:
+        print(f"wave_sim.py — config: {cfg_path}")
+        print(f"V configu chýba kľúč {missing} — simulácia sa nedá spustiť.")
+        sys.exit(1)
     max_lv = cfg["max_level_prototype"]
+
+    if cfg["service_time"] <= 0:
+        print(f"wave_sim.py — config: {cfg_path}")
+        print("service.service_time je 0 (placeholder) — simulacia sa neda spustit.")
+        sys.exit(1)
 
     print(f"wave_sim.py — config: {cfg_path}")
     print(f"service_time {cfg['service_time']} s · utilization_empty {cfg['utilization_empty']} · "
