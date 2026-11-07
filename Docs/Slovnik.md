@@ -66,6 +66,8 @@ Kontrolu robí `Assets/Editor/Naming/BannedTermsCheck.cs`: pred každým buildom
 | building queue | `BuildingQueue` | miesta a rad čakajúcich jednotiek v budove | SCRUM-30 |
 | utilization | `Utilization` | rýchlosť budovy (1,0 s Workerom) | SCRUM-31, SCRUM-38 |
 | service time | `ServiceTime` | čas obsluhy jednej jednotky | SCRUM-31 |
+| service progress | `ServiceProgress` | koľko z obsluhy jednotky je hotové (0–1) | SCRUM-31 |
+| speed multiplier | `SpeedMultiplier` | násobok rýchlosti obsluhy (Energy boost) | SCRUM-31, SCRUM-57 |
 | Wave Satisfaction | `WaveSatisfaction` | spokojnosť vlny 0–100 % | SCRUM-43 |
 | rating | `Rating` | 1★–5★ alebo Perfect | SCRUM-44 |
 | Coins | `Coins` | mena za vlny | SCRUM-45 |
