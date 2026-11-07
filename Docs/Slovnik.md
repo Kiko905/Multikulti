@@ -63,6 +63,7 @@ Kontrolu robí `Assets/Editor/Naming/BannedTermsCheck.cs`: pred každým buildom
 | backlog | `Backlog` | jednotky, ktoré ešte čakajú na obsluhu | SCRUM-25 |
 | Worker | `Worker` | pracovník, ktorý zrýchľuje budovu | SCRUM-14 |
 | capacity | `Capacity` | počet miest obsluhy v budove | SCRUM-30 |
+| building queue | `BuildingQueue` | miesta a rad čakajúcich jednotiek v budove | SCRUM-30 |
 | utilization | `Utilization` | rýchlosť budovy (1,0 s Workerom) | SCRUM-31, SCRUM-38 |
 | service time | `ServiceTime` | čas obsluhy jednej jednotky | SCRUM-31 |
 | Wave Satisfaction | `WaveSatisfaction` | spokojnosť vlny 0–100 % | SCRUM-43 |
