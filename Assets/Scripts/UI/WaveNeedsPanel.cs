@@ -18,6 +18,11 @@ namespace Multikulti.UI
     /// Graybox: the panel builds its own uGUI canvas with the built-in font, so the scene only needs this
     /// component. Texts come from the Localization table UI (need.*, wave_needs.worker).
     /// The panel only reads the game; none of its graphics is a raycast target, so it never blocks a tap.
+    ///
+    /// Layout for 3–5 needs (SCRUM-79): the panel hangs from a fixed point in the top right corner, below the
+    /// space kept for the top bar (topOffset), and every row has the same fixed size. A need that joins in a later
+    /// wave is added at the bottom, so the rows above it never move and the panel only grows downwards.
+    /// In the editor and in development builds the panel warns once if it covers a building.
     /// </summary>
     public sealed class WaveNeedsPanel : MonoBehaviour
     {
@@ -32,17 +37,23 @@ namespace Multikulti.UI
         [SerializeField] WaveLoop waveLoop;
         [SerializeField] WorkerManager workers;
         [SerializeField, Min(8)] int fontSize = 32;
-        [SerializeField, Min(0f)] float margin = 32f;
+        [SerializeField, Min(0f), Tooltip("Distance from the right edge of the safe area.")]
+        float margin = 32f;
+        [SerializeField, Min(0f), Tooltip("Distance from the top of the safe area; keeps the top bar (Resort Value, currencies) free.")]
+        float topOffset = 140f;
 
         readonly WaveNeedsProgress m_Progress = new WaveNeedsProgress();
         readonly List<NeedProgress> m_Active = new List<NeedProgress>();
         readonly List<Row> m_Rows = new List<Row>();
+        readonly HashSet<Building> m_CoveredBuildings = new HashSet<Building>();
 
         LocalizedString m_WorkerLabel;
         LocalizedString.ChangeHandler m_WorkerLabelChanged;
         string m_WorkerText = string.Empty;
 
         GameObject m_Panel;
+        RectTransform m_PanelRect;
+        int m_VisibleRows;
         RectTransform m_SafeArea;
         Rect m_AppliedSafeArea;
         Vector2Int m_AppliedScreenSize;
@@ -103,19 +114,34 @@ namespace Multikulti.UI
             var visible = waveLoop.State.IsInWave();
             if (m_Panel.activeSelf != visible)
                 m_Panel.SetActive(visible);
-            if (!visible) return;
+            if (!visible)
+            {
+                m_VisibleRows = 0;
+                return;
+            }
 
             m_Progress.Collect(CurrentWave(), Buildings, m_Active);
 
             // m_Rows and m_Active are both in WaveNeedsProgress.Needs order.
             var next = 0;
+            var visibleRows = 0;
             foreach (var row in m_Rows)
             {
                 var isActive = next < m_Active.Count && m_Active[next].Need == row.Need;
                 if (isActive)
+                {
                     Show(row, m_Active[next++]);
+                    visibleRows |= 1 << (int)row.Need;
+                }
                 if (row.Root.activeSelf != isActive)
                     row.Root.SetActive(isActive);
+            }
+
+            // The panel changes its size only when a row appears or disappears; check it then.
+            if (visibleRows != m_VisibleRows)
+            {
+                m_VisibleRows = visibleRows;
+                WarnIfCoveringBuildings();
             }
         }
 
@@ -161,6 +187,70 @@ namespace Multikulti.UI
             m_SafeArea.offsetMax = Vector2.zero;
         }
 
+        /// <summary>
+        /// SCRUM-79: the panel must not cover the island. Logs a warning once per building whose on-screen bounds
+        /// overlap the panel, e.g. after the camera or the island layout changes. Editor and development builds only.
+        /// </summary>
+        [System.Diagnostics.Conditional("UNITY_EDITOR"), System.Diagnostics.Conditional("DEVELOPMENT_BUILD")]
+        void WarnIfCoveringBuildings()
+        {
+            var camera = Camera.main;
+            if (camera == null) return;
+
+            LayoutRebuilder.ForceRebuildLayoutImmediate(m_PanelRect);
+            var panel = ScreenRect(m_PanelRect);
+
+            foreach (var building in Buildings)
+            {
+                if (building == null || m_CoveredBuildings.Contains(building)) continue;
+                if (!TryGetScreenRect(building, camera, out var bounds) || !panel.Overlaps(bounds)) continue;
+
+                m_CoveredBuildings.Add(building);
+                Debug.LogWarning(
+                    $"Wave Needs Panel covers {building.name} (SCRUM-79). Change margin or topOffset of the panel, or the camera.",
+                    this);
+            }
+        }
+
+        /// <summary>Rect of a RectTransform on a Screen Space Overlay canvas, in screen pixels.</summary>
+        static Rect ScreenRect(RectTransform rect)
+        {
+            var corners = new Vector3[4];
+            rect.GetWorldCorners(corners);
+            return Rect.MinMaxRect(corners[0].x, corners[0].y, corners[2].x, corners[2].y);
+        }
+
+        /// <summary>Screen pixels covered by the renderers of a building; false if it has none in front of the camera.</summary>
+        static bool TryGetScreenRect(Building building, Camera camera, out Rect rect)
+        {
+            rect = default;
+            var found = false;
+            var min = Vector2.positiveInfinity;
+            var max = Vector2.negativeInfinity;
+
+            foreach (var renderer in building.GetComponentsInChildren<Renderer>())
+            {
+                var bounds = renderer.bounds;
+                for (var corner = 0; corner < 8; corner++)
+                {
+                    var world = new Vector3(
+                        (corner & 1) == 0 ? bounds.min.x : bounds.max.x,
+                        (corner & 2) == 0 ? bounds.min.y : bounds.max.y,
+                        (corner & 4) == 0 ? bounds.min.z : bounds.max.z);
+                    var screen = camera.WorldToScreenPoint(world);
+                    if (screen.z <= 0f) continue;
+
+                    min = Vector2.Min(min, screen);
+                    max = Vector2.Max(max, screen);
+                    found = true;
+                }
+            }
+
+            if (found)
+                rect = Rect.MinMaxRect(min.x, min.y, max.x, max.y);
+            return found;
+        }
+
         void BuildCanvas()
         {
             var font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
@@ -182,12 +272,14 @@ namespace Multikulti.UI
             m_SafeArea.offsetMin = Vector2.zero;
             m_SafeArea.offsetMax = Vector2.zero;
 
-            // Right edge, vertically centred: next to the island, away from the top bar.
+            // Top right corner below the top bar, pivot at the top: a new row only makes the panel longer
+            // downwards, the rows above it stay where they were (SCRUM-79).
             var panel = CreateRect("Wave Needs Panel", m_SafeArea);
-            panel.anchorMin = new Vector2(1f, 0.5f);
-            panel.anchorMax = new Vector2(1f, 0.5f);
-            panel.pivot = new Vector2(1f, 0.5f);
-            panel.anchoredPosition = new Vector2(-margin, 0f);
+            panel.anchorMin = Vector2.one;
+            panel.anchorMax = Vector2.one;
+            panel.pivot = Vector2.one;
+            panel.anchoredPosition = new Vector2(-margin, -topOffset);
+            m_PanelRect = panel;
 
             var background = panel.gameObject.AddComponent<Image>();
             background.color = k_BackgroundColor;
@@ -222,6 +314,11 @@ namespace Multikulti.UI
             layout.childControlHeight = true;
             layout.childForceExpandWidth = false;
             layout.childForceExpandHeight = false;
+
+            // Every row has the same height, so 3, 4 or 5 rows always stack the same way (SCRUM-79).
+            var rowElement = root.gameObject.AddComponent<LayoutElement>();
+            rowElement.minHeight = Mathf.Ceil(fontSize * 1.3f);
+            rowElement.preferredHeight = rowElement.minHeight;
 
             // Fixed column widths, so the numbers do not shift the row while they change.
             var badgeSize = Mathf.RoundToInt(fontSize * 0.8f);
