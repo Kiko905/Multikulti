@@ -11,6 +11,7 @@ namespace Multikulti.Buildings
 
         public Need Need => need;
         public BuildingQueue Queue { get; private set; }
+        public bool HasWorker { get; set; }
 
         void Awake()
         {
@@ -39,6 +40,7 @@ namespace Multikulti.Buildings
             if (Queue == null || Camera.main == null) return;
 
             m_Label.Clear();
+            m_Label.Append(HasWorker ? "[Worker] " : "[ — ] ");
             m_Label.Append($"{need}: {Queue.Seated.Count}/{Queue.Capacity}, backlog {Queue.BacklogCount}");
             m_Label.Append($", served {Queue.ServedCount}/{Queue.ArrivedCount}");
             if (Queue.ArrivedCount > 0 && Queue.IsAllServed) m_Label.Append(" ✓");
