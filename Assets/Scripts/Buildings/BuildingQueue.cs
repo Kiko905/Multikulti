@@ -19,6 +19,11 @@ namespace Multikulti.Buildings
         public int BacklogCount => m_Backlog.Count;
         public int FreeSeats => Capacity - m_Seated.Count;
 
+        public int ArrivedCount { get; private set; }
+        public int ServedCount { get; private set; }
+        public int PendingCount => m_Seated.Count + m_Backlog.Count;
+        public bool IsAllServed => PendingCount == 0;
+
         public float Utilization
         {
             get => m_Utilization;
@@ -42,6 +47,7 @@ namespace Multikulti.Buildings
         public event Action<Unit> UnitSeated;
         public event Action<Unit> UnitQueued;
         public event Action<Unit> UnitServed;
+        public event Action AllServed;
 
         public BuildingQueue(Need need, int capacity, float serviceTime)
         {
@@ -57,6 +63,7 @@ namespace Multikulti.Buildings
             if (unit == null) throw new ArgumentNullException(nameof(unit));
             if (unit.Need != Need)
                 throw new ArgumentException($"Building serves {Need}, got {unit.Need}.");
+            ArrivedCount++;
 
             if (FreeSeats > 0)
             {
@@ -90,8 +97,10 @@ namespace Multikulti.Buildings
             if (!m_Seated.Remove(unit))
                 throw new InvalidOperationException("Unit is not seated in this building.");
             unit.ServiceProgress = 1f;
+            ServedCount++;
             UnitServed?.Invoke(unit);
             FillSeats(now);
+            if (IsAllServed) AllServed?.Invoke();
         }
 
         public void SetCapacity(int capacity, float now)
@@ -99,6 +108,14 @@ namespace Multikulti.Buildings
             if (capacity < Capacity) throw new ArgumentException("Capacity can only grow.");
             Capacity = capacity;
             FillSeats(now);
+        }
+
+        public void AssertNoUnitLost()
+        {
+            var expected = ArrivedCount - ServedCount;
+            if (PendingCount != expected)
+                throw new InvalidOperationException(
+                    $"{Need}: arrived {ArrivedCount}, served {ServedCount}, pending {PendingCount} (expected {expected}).");
         }
 
         void FillSeats(float now)

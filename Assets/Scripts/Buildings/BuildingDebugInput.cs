@@ -21,6 +21,13 @@ namespace Multikulti.Buildings
             if (keyboard.spaceKey.wasPressedThisFrame)
                 queue.Enqueue(new Unit(m_Building.Need, Time.time), Time.time);
 
+            if (keyboard.wKey.wasPressedThisFrame)
+            {
+                for (var i = 0; i < 20; i++)
+                    queue.Enqueue(new Unit(m_Building.Need, Time.time), Time.time);
+                Debug.Log($"{m_Building.Need}: +20 units, backlog {queue.BacklogCount}");
+            }
+
             if (keyboard.sKey.wasPressedThisFrame && queue.Seated.Count > 0)
                 queue.CompleteService(queue.Seated[0], Time.time);
 
