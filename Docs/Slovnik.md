@@ -62,6 +62,12 @@ Kontrolu robí `Assets/Editor/Naming/BannedTermsCheck.cs`: pred každým buildom
 | unit | `Unit` | jedna jednotka needu (jeden hosť s potrebou) | SCRUM-42 |
 | backlog | `Backlog` | jednotky, ktoré ešte čakajú na obsluhu | SCRUM-25 |
 | Worker | `Worker` | pracovník, ktorý zrýchľuje budovu | SCRUM-14 |
+| worker roster | `WorkerRoster` | ktorý Worker stojí na ktorej budove; Workerov je vždy o 1 menej než budov | SCRUM-39 |
+| worker manager | `WorkerManager` | prepája `WorkerRoster` s budovami v scéne | SCRUM-39 |
+| slot | — | miesto pre Workera v budove; každá budova má 1 slot | SCRUM-39 |
+| has worker | `HasWorker` | na budove stojí Worker | SCRUM-39 |
+| empty building | `EmptyBuilding` | jediná budova bez Workera (namiesto zakázaného „idle“) | SCRUM-39 |
+| worker moved | `WorkerMoved` | udalosť: Worker sa presunul alebo pribudol | SCRUM-39, SCRUM-36 |
 | capacity | `Capacity` | počet miest obsluhy v budove | SCRUM-30 |
 | building queue | `BuildingQueue` | miesta a rad čakajúcich jednotiek v budove | SCRUM-30 |
 | arrived / served | `ArrivedCount` / `ServedCount` | koľko jednotiek do budovy prišlo / koľko bolo obslúžených | SCRUM-35 |
