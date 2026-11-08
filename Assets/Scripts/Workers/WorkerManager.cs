@@ -31,6 +31,24 @@ namespace Multikulti.Workers
             Roster.AddBuilding();
         }
 
+        public bool CanMove() => true;
+
+        public bool TryMoveFrom(Building building)
+        {
+            if (!CanMove()) return false;
+
+            var from = buildings.IndexOf(building);
+            if (from < 0) return false;
+
+            var worker = Roster.WorkerOn(from);
+            if (worker < 0) return false;
+
+            var target = Roster.ChooseTarget(from);
+            if (target < 0) return false;
+
+            return Roster.Move(worker, target);
+        }
+
         void OnWorkerMoved(int worker, int from, int to) => Refresh();
 
         void Refresh()

@@ -68,6 +68,10 @@ Kontrolu robí `Assets/Editor/Naming/BannedTermsCheck.cs`: pred každým buildom
 | has worker | `HasWorker` | na budove stojí Worker | SCRUM-39 |
 | empty building | `EmptyBuilding` | jediná budova bez Workera (namiesto zakázaného „idle“) | SCRUM-39 |
 | worker moved | `WorkerMoved` | udalosť: Worker sa presunul alebo pribudol | SCRUM-39, SCRUM-36 |
+| move | `Move` | presun Workera na prázdnu budovu: zadarmo, okamžite, bez potvrdenia | SCRUM-36 |
+| move target | `ChooseTarget` | výber budovy, kam Worker pôjde; dnes vždy jediná prázdna budova | SCRUM-36 |
+| can move | `CanMove` | či je presun Workera práve dostupný (podľa stavu vlny) | SCRUM-36, SCRUM-37 |
+| tap | `WorkerTapInput` | ťuknutie na budovu s Workerom presunie Workera na prázdnu budovu | SCRUM-36 |
 | capacity | `Capacity` | počet miest obsluhy v budove | SCRUM-30 |
 | building queue | `BuildingQueue` | miesta a rad čakajúcich jednotiek v budove | SCRUM-30 |
 | arrived / served | `ArrivedCount` / `ServedCount` | koľko jednotiek do budovy prišlo / koľko bolo obslúžených | SCRUM-35 |
