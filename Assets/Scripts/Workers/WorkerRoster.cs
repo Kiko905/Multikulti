@@ -40,6 +40,43 @@ namespace Multikulti.Workers
             }
         }
 
+        public bool Move(int worker, int toBuilding)
+        {
+            if (worker < 0 || worker >= WorkerCount)
+                throw new ArgumentOutOfRangeException(nameof(worker), $"Worker {worker} neexistuje.");
+            if (toBuilding < 0 || toBuilding >= BuildingCount)
+                throw new ArgumentOutOfRangeException(nameof(toBuilding), $"Budova {toBuilding} neexistuje.");
+
+            if (HasWorker(toBuilding)) return false;
+
+            var from = m_BuildingOfWorker[worker];
+            m_BuildingOfWorker[worker] = toBuilding;
+
+            AssertValid();
+            WorkerMoved?.Invoke(worker, from, toBuilding);
+            return true;
+        }
+
+        public int ChooseTarget(int fromBuilding)
+        {
+            var target = -1;
+            var emptyCount = 0;
+            for (var b = 0; b < BuildingCount; b++)
+            {
+                if (HasWorker(b)) continue;
+                target = b;
+                emptyCount++;
+            }
+
+            if (emptyCount != 1)
+            {
+                UnityEngine.Debug.LogWarning($"Prázdnych budov je {emptyCount}, presun z budovy {fromBuilding} nie je určený.");
+                return -1;
+            }
+
+            return target;
+        }
+
         public int AddBuilding()
         {
             var target = EmptyBuilding;
