@@ -5,6 +5,7 @@ namespace Multikulti.Buildings
         public Need Need { get; }
         public float ArrivedAt { get; }
         public float? SeatedAt { get; internal set; }
+        public float ServiceProgress { get; internal set; }
 
         public Unit(Need need, float arrivedAt)
         {
