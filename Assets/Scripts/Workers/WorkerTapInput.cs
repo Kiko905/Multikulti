@@ -1,4 +1,5 @@
 using Multikulti.Buildings;
+using Multikulti.Waves;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -26,6 +27,12 @@ namespace Multikulti.Workers
 
             var building = hit.collider.GetComponentInParent<Building>();
             if (building == null) return;
+
+            if (!m_Manager.CanMove())
+            {
+                Debug.Log($"Presun nie je dostupný: {m_Manager.WaveState.ToJiraName()}");
+                return;
+            }
 
             if (m_Manager.TryMoveFrom(building))
                 Debug.Log($"Presun z {building.name}, prázdna je teraz budova {m_Manager.Roster.EmptyBuilding}");
