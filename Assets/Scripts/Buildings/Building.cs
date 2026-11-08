@@ -11,7 +11,17 @@ namespace Multikulti.Buildings
 
         public Need Need => need;
         public BuildingQueue Queue { get; private set; }
-        public bool HasWorker { get; set; }
+        bool m_HasWorker;
+
+        public bool HasWorker
+        {
+            get => m_HasWorker;
+            set
+            {
+                m_HasWorker = value;
+                Queue.Utilization = UtilizationRules.For(value, WaveConfig.Current.Service);
+            }
+        }
 
         void Awake()
         {
@@ -19,7 +29,7 @@ namespace Multikulti.Buildings
             var capacity = config.Buildings.CapacityByLevel[level - 1];
             Queue = new BuildingQueue(need, capacity, config.Service.ServiceTime)
             {
-                Utilization = config.Service.UtilizationWorker
+                Utilization = UtilizationRules.For(m_HasWorker, config.Service)
             };
             Queue.AllServed += () => Debug.Log($"{need}: all {Queue.ServedCount} units served");
         }
@@ -41,6 +51,7 @@ namespace Multikulti.Buildings
 
             m_Label.Clear();
             m_Label.Append(HasWorker ? "[Worker] " : "[ — ] ");
+            m_Label.Append($"{Queue.Utilization:0.00}× ");
             m_Label.Append($"{need}: {Queue.Seated.Count}/{Queue.Capacity}, backlog {Queue.BacklogCount}");
             m_Label.Append($", served {Queue.ServedCount}/{Queue.ArrivedCount}");
             if (Queue.ArrivedCount > 0 && Queue.IsAllServed) m_Label.Append(" ✓");

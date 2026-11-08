@@ -72,7 +72,8 @@ Kontrolu robí `Assets/Editor/Naming/BannedTermsCheck.cs`: pred každým buildom
 | building queue | `BuildingQueue` | miesta a rad čakajúcich jednotiek v budove | SCRUM-30 |
 | arrived / served | `ArrivedCount` / `ServedCount` | koľko jednotiek do budovy prišlo / koľko bolo obslúžených | SCRUM-35 |
 | all served | `IsAllServed`, `AllServed` | budova obslúžila všetky jednotky, ktoré prišli (namiesto zakázaného „idle“) | SCRUM-35 |
-| utilization | `Utilization` | rýchlosť budovy (1,0 s Workerom) | SCRUM-31, SCRUM-38 |
+| utilization | `Utilization` | rýchlosť budovy: 1,0 s Workerom, 0,33 bez neho, nikdy 0 | SCRUM-31, SCRUM-38, SCRUM-86 |
+| utilization rules | `UtilizationRules` | jediné miesto, ktoré určuje utilization budovy podľa toho, či má Workera | SCRUM-38 |
 | service time | `ServiceTime` | čas obsluhy jednej jednotky | SCRUM-31 |
 | service progress | `ServiceProgress` | koľko z obsluhy jednotky je hotové (0–1) | SCRUM-31 |
 | speed multiplier | `SpeedMultiplier` | násobok rýchlosti obsluhy (Energy boost) | SCRUM-31, SCRUM-57 |
@@ -92,3 +93,4 @@ Kontrolu robí `Assets/Editor/Naming/BannedTermsCheck.cs`: pred každým buildom
 
 ## Zjednotené
 - Utilization budovy s Workerom: `utilization_worker` (od SCRUM-96 existuje len jeden config, `tools/config.json` bol zmazaný).
+- Utilization budovy bez Workera: `utilization_empty` (namiesto zakázaného „idle“).

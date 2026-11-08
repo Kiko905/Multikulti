@@ -13,7 +13,7 @@ namespace Multikulti.Workers
         void Update()
         {
             var keyboard = Keyboard.current;
-            if (keyboard == null || !keyboard.bKey.wasPressedThisFrame) return;
+            if (keyboard == null || !keyboard.nKey.wasPressedThisFrame) return;
 
             var last = m_Manager.Buildings[m_Manager.Buildings.Count - 1];
             var copy = Instantiate(last, last.transform.position + Vector3.right * 3f, last.transform.rotation, last.transform.parent);
