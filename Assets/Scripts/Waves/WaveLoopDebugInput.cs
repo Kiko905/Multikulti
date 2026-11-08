@@ -7,7 +7,8 @@ namespace Multikulti.Waves
     /// Keyboard shortcuts to walk through the wave loop in the graybox scene (SCRUM-26).
     /// L = next step of the loop, P = pause / resume (simulates the app going to the background).
     /// Keys used elsewhere: Space, W, S, E (BuildingDebugInput), N (WorkerManagerDebugInput).
-    /// Resolving by L skips the real end-of-wave check until SCRUM-25 drives it.
+    /// In WaveActive, L closes arrival early (skips the rest of wave_timer); the wave then ends by itself
+    /// once every building has served all units (SCRUM-25).
     /// </summary>
     [RequireComponent(typeof(WaveLoop))]
     public sealed class WaveLoopDebugInput : MonoBehaviour
@@ -37,7 +38,7 @@ namespace Multikulti.Waves
                     machine.GuestsArrived();
                     break;
                 case WaveState.WaveActive:
-                    machine.Resolve();
+                    m_Loop.CloseArrival();
                     break;
                 case WaveState.WaveComplete:
                     machine.Claim();

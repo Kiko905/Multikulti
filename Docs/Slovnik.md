@@ -84,6 +84,8 @@ Kontrolu robí `Assets/Editor/Naming/BannedTermsCheck.cs`: pred každým buildom
 | wave state machine | `WaveStateMachine` | povolené prechody medzi stavmi vlny, čisté C# | SCRUM-26 |
 | wave loop | `WaveLoop` | spúšťa `WaveStateMachine` v scéne, hlási stav do crash reportingu a metrík | SCRUM-26 |
 | wave time | `WaveTime` | sekundy od Start Wave; počas `WavePaused` stojí | SCRUM-26 |
+| arrival | `IsArrivalOpen`, `ArrivalTime` | fáza príchodu: prvých `wave_timer` sekúnd `WaveActive`, prichádzajú noví hostia | SCRUM-24, SCRUM-25 |
+| drain | `IsArrivalClosed`, `DrainSeconds` | dobeh: príchod je uzavretý, budovy obsluhujú zvyšok radov | SCRUM-25 |
 | paused | `IsPaused` | vlna je v `WavePaused`; budova vtedy neobsluhuje | SCRUM-26 |
 | Wave Satisfaction | `WaveSatisfaction` | spokojnosť vlny 0–100 % | SCRUM-43 |
 | rating | `Rating` | 1★–5★ alebo Perfect | SCRUM-44 |
