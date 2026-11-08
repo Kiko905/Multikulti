@@ -19,6 +19,30 @@ MonoBehaviour:
     m_Key: wave.start
     m_Metadata:
       m_Items: []
+  - m_Id: 5237297274884096
+    m_Key: need.rooms
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884097
+    m_Key: need.drinks
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884098
+    m_Key: need.food
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884099
+    m_Key: need.relax
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884100
+    m_Key: need.ocean_view
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884101
+    m_Key: wave_needs.worker
+    m_Metadata:
+      m_Items: []
   m_Metadata:
     m_Items: []
   m_KeyGenerator:

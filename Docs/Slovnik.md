@@ -101,6 +101,9 @@ Kontrolu robí `Assets/Editor/Naming/BannedTermsCheck.cs`: pred každým buildom
 | Area Unlock | `AreaUnlock` | odomknutie Pool/Bungalows | SCRUM-51 |
 | VIP | `Vip` | špeciálny hosť s requestami | SCRUM-61 |
 | Guest Request Board | `GuestRequestBoard` | požiadavky VIP hosťa | SCRUM-62 |
+| Wave Needs Panel | `WaveNeedsPanel` | panel vedľa ostrova počas vlny (`WaveIncoming`, `WaveActive`, `WavePaused`): pre každý aktívny need obslúžené / celkové jednotky vlny a značka Worker, ak na budove needu stojí Worker | SCRUM-29 |
+| active need | — | need, ktorý má vo vlne demand > 0, alebo doň aj tak prišli jednotky; len taký need má riadok vo Wave Needs Panel | SCRUM-29 |
+| need progress | `NeedProgress`, `WaveNeedsProgress` | obslúžené a celkové jednotky needu od Start Wave; celkové = demand z `wave_config.json`, alebo viac, ak prišlo viac jednotiek (Sudden rush) | SCRUM-29 |
 
 ## Zjednotené
 - Utilization budovy s Workerom: `utilization_worker` (od SCRUM-96 existuje len jeden config, `tools/config.json` bol zmazaný).

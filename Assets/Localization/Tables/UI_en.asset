@@ -22,6 +22,30 @@ MonoBehaviour:
     m_Localized: "Start Wave\u201D"
     m_Metadata:
       m_Items: []
+  - m_Id: 5237297274884096
+    m_Localized: Rooms
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884097
+    m_Localized: Drinks
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884098
+    m_Localized: Food
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884099
+    m_Localized: Relax
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884100
+    m_Localized: Ocean View
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884101
+    m_Localized: Worker
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []
