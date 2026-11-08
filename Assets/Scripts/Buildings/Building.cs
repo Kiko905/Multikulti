@@ -20,11 +20,15 @@ namespace Multikulti.Buildings
             {
                 Utilization = config.Service.UtilizationWorker
             };
+            Queue.AllServed += () => Debug.Log($"{need}: all {Queue.ServedCount} units served");
         }
 
         void Update()
         {
             Queue.Tick(Time.deltaTime, Time.time);
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            Queue.AssertNoUnitLost();
+#endif
         }
 
 #if UNITY_EDITOR
@@ -36,11 +40,13 @@ namespace Multikulti.Buildings
 
             m_Label.Clear();
             m_Label.Append($"{need}: {Queue.Seated.Count}/{Queue.Capacity}, backlog {Queue.BacklogCount}");
+            m_Label.Append($", served {Queue.ServedCount}/{Queue.ArrivedCount}");
+            if (Queue.ArrivedCount > 0 && Queue.IsAllServed) m_Label.Append(" ✓");
             foreach (var unit in Queue.Seated)
                 m_Label.Append($"\n  {unit.ServiceProgress:P0}");
 
             var pos = Camera.main.WorldToScreenPoint(transform.position + Vector3.up);
-            GUI.Label(new Rect(pos.x - 100, Screen.height - pos.y, 200, 100), m_Label.ToString());
+            GUI.Label(new Rect(pos.x - 150, Screen.height - pos.y, 300, 120), m_Label.ToString());
         }
 #endif
     }

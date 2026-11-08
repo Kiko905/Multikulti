@@ -64,6 +64,8 @@ Kontrolu robí `Assets/Editor/Naming/BannedTermsCheck.cs`: pred každým buildom
 | Worker | `Worker` | pracovník, ktorý zrýchľuje budovu | SCRUM-14 |
 | capacity | `Capacity` | počet miest obsluhy v budove | SCRUM-30 |
 | building queue | `BuildingQueue` | miesta a rad čakajúcich jednotiek v budove | SCRUM-30 |
+| arrived / served | `ArrivedCount` / `ServedCount` | koľko jednotiek do budovy prišlo / koľko bolo obslúžených | SCRUM-35 |
+| all served | `IsAllServed`, `AllServed` | budova obslúžila všetky jednotky, ktoré prišli (namiesto zakázaného „idle“) | SCRUM-35 |
 | utilization | `Utilization` | rýchlosť budovy (1,0 s Workerom) | SCRUM-31, SCRUM-38 |
 | service time | `ServiceTime` | čas obsluhy jednej jednotky | SCRUM-31 |
 | service progress | `ServiceProgress` | koľko z obsluhy jednotky je hotové (0–1) | SCRUM-31 |
