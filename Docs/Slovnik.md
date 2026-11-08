@@ -81,6 +81,10 @@ Kontrolu robí `Assets/Editor/Naming/BannedTermsCheck.cs`: pred každým buildom
 | service time | `ServiceTime` | čas obsluhy jednej jednotky | SCRUM-31 |
 | service progress | `ServiceProgress` | koľko z obsluhy jednotky je hotové (0–1) | SCRUM-31 |
 | speed multiplier | `SpeedMultiplier` | násobok rýchlosti obsluhy (Energy boost) | SCRUM-31, SCRUM-57 |
+| wave state machine | `WaveStateMachine` | povolené prechody medzi stavmi vlny, čisté C# | SCRUM-26 |
+| wave loop | `WaveLoop` | spúšťa `WaveStateMachine` v scéne, hlási stav do crash reportingu a metrík | SCRUM-26 |
+| wave time | `WaveTime` | sekundy od Start Wave; počas `WavePaused` stojí | SCRUM-26 |
+| paused | `IsPaused` | vlna je v `WavePaused`; budova vtedy neobsluhuje | SCRUM-26 |
 | Wave Satisfaction | `WaveSatisfaction` | spokojnosť vlny 0–100 % | SCRUM-43 |
 | rating | `Rating` | 1★–5★ alebo Perfect | SCRUM-44 |
 | Coins | `Coins` | mena za vlny | SCRUM-45 |

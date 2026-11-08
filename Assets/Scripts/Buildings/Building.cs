@@ -13,6 +13,9 @@ namespace Multikulti.Buildings
         public BuildingQueue Queue { get; private set; }
         bool m_HasWorker;
 
+        /// <summary>While true the service does not advance (WavePaused, SCRUM-26); set by WaveLoop.</summary>
+        public bool IsPaused { get; set; }
+
         public bool HasWorker
         {
             get => m_HasWorker;
@@ -36,7 +39,8 @@ namespace Multikulti.Buildings
 
         void Update()
         {
-            Queue.Tick(Time.deltaTime, Time.time);
+            if (!IsPaused)
+                Queue.Tick(Time.deltaTime, Time.time);
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             Queue.AssertNoUnitLost();
 #endif
