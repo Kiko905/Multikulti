@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Multikulti.Buildings;
+using Multikulti.Waves;
 using UnityEngine;
 
 namespace Multikulti.Workers
@@ -7,6 +8,7 @@ namespace Multikulti.Workers
     public sealed class WorkerManager : MonoBehaviour
     {
         [SerializeField] List<Building> buildings = new List<Building>();
+        [SerializeField] WaveLoop waveLoop;
 
         public WorkerRoster Roster { get; private set; }
         public IReadOnlyList<Building> Buildings => buildings;
@@ -15,6 +17,8 @@ namespace Multikulti.Workers
         {
             Roster = new WorkerRoster(buildings.Count);
             Roster.WorkerMoved += OnWorkerMoved;
+            if (waveLoop == null)
+                waveLoop = FindAnyObjectByType<WaveLoop>();
         }
 
         void Start() => Refresh();
@@ -31,7 +35,14 @@ namespace Multikulti.Workers
             Roster.AddBuilding();
         }
 
-        public bool CanMove() => true;
+        public WaveState WaveState => waveLoop != null && waveLoop.Machine != null ? waveLoop.State : WaveState.AwaitingWave;
+
+        public bool CanMove() => IsMoveAllowed(WaveState);
+
+        public static bool IsMoveAllowed(WaveState state) =>
+            state == WaveState.AwaitingWave ||
+            state == WaveState.WaveIncoming ||
+            state == WaveState.WaveActive;
 
         public bool TryMoveFrom(Building building)
         {

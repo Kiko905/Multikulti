@@ -71,6 +71,7 @@ Kontrolu robí `Assets/Editor/Naming/BannedTermsCheck.cs`: pred každým buildom
 | move | `Move` | presun Workera na prázdnu budovu: zadarmo, okamžite, bez potvrdenia | SCRUM-36 |
 | move target | `ChooseTarget` | výber budovy, kam Worker pôjde; dnes vždy jediná prázdna budova | SCRUM-36 |
 | can move | `CanMove` | či je presun Workera práve dostupný (podľa stavu vlny) | SCRUM-36, SCRUM-37 |
+| move allowed | `IsMoveAllowed` | stavy vlny, v ktorých sa dá Worker presunúť: `AwaitingWave`, `WaveIncoming`, `WaveActive` (príchod aj dobeh); vo `WavePaused` nie | SCRUM-37 |
 | tap | `WorkerTapInput` | ťuknutie na budovu s Workerom presunie Workera na prázdnu budovu | SCRUM-36 |
 | capacity | `Capacity` | počet miest obsluhy v budove | SCRUM-30 |
 | building queue | `BuildingQueue` | miesta a rad čakajúcich jednotiek v budove | SCRUM-30 |
