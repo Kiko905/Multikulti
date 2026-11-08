@@ -15,8 +15,9 @@ namespace Multikulti.Workers
         {
             Roster = new WorkerRoster(buildings.Count);
             Roster.WorkerMoved += OnWorkerMoved;
-            Refresh();
         }
+
+        void Start() => Refresh();
 
         void OnDestroy()
         {
