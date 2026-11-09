@@ -99,6 +99,8 @@ Kontrolu robí `Assets/Editor/Naming/BannedTermsCheck.cs`: pred každým buildom
 | construction site | `ConstructionSite`, `VisibleSites` | stavenisko budovy, ktorá ešte nie je postavená (Pool → Relax, Bungalows → Ocean View); vidno ho, kým v scéne nie je budova s jeho needom | SCRUM-21, SCRUM-53 |
 | resort status | `ResortStatus`, `ResortStatusRules` | stav rezortu na Home: Ready for Guests, Wave in progress, Wave paused, Wave complete, All waves done | SCRUM-21 |
 | balances | `ResortBalances` | zostatky Coins, Energy a Resort Value pre top bar; odkiaľ sa berú, riešia SCRUM-45, SCRUM-55, SCRUM-56 a SCRUM-59 | SCRUM-21 |
+| move feedback | `WorkerMoveFeedback` | spätná väzba presunu v tom istom frame: token Workera preskočí zo zdrojovej budovy na cieľovú, cieľová zabliká nazeleno a zväčší sa, zdrojová zabliká načerveno a stmavne; budova bez Workera ostáva tmavšia | SCRUM-41 |
+| service meter | `ServiceMeter`, `SpeedPips` | merač obsluhy pred budovou: pás pre každé miesto sa plní postupom obsluhy jednotky (s Workerom asi 3× rýchlejšie); body rýchlosti: 3 s Workerom, 1 bez neho; zelený s Workerom, oranžový bez neho | SCRUM-41 |
 | Wave Satisfaction | `WaveSatisfaction` | spokojnosť vlny 0–100 % | SCRUM-43 |
 | rating | `Rating` | 1★–5★ alebo Perfect | SCRUM-44 |
 | Coins | `Coins` | mena za vlny | SCRUM-45 |

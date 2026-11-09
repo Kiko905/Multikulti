@@ -864,6 +864,7 @@ GameObject:
   - component: {fileID: 1945898636}
   - component: {fileID: 1945898638}
   - component: {fileID: 1945898639}
+  - component: {fileID: 1945898640}
   m_Layer: 0
   m_Name: WorkerManager
   m_TagString: Untagged
@@ -927,6 +928,32 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Multikulti.Workers.WorkerTapInput
   maxDistance: 200
+--- !u!114 &1945898640
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1945898635}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9f12a0a65446217e05a90e1bd7c569fb, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::Multikulti.Workers.WorkerMoveFeedback
+  workerColor: {r: 1, g: 0.76, b: 0.18, a: 1}
+  emptyBrightness: 0.5
+  gainColor: {r: 0.35, g: 0.95, b: 0.45, a: 1}
+  lossColor: {r: 0.95, g: 0.35, b: 0.3, a: 1}
+  fastColor: {r: 0.35, g: 0.9, b: 0.45, a: 1}
+  slowColor: {r: 0.95, g: 0.55, b: 0.2, a: 1}
+  hopSeconds: 0.45
+  hopHeight: 1.5
+  pulseSeconds: 0.5
+  gainPop: 0.18
+  lossDip: 0.1
+  tokenGap: 0.55
+  meterWidth: 0.9
+  meterBarHeight: 0.55
 --- !u!1 &2100000001
 GameObject:
   m_ObjectHideFlags: 0
