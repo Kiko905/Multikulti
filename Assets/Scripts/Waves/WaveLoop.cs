@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using Multikulti.Buildings;
 using Multikulti.Config;
 using Multikulti.Diagnostics;
 using Multikulti.Workers;
@@ -18,6 +20,10 @@ namespace Multikulti.Waves
     /// guests come; the wave keeps running until every building has served all its units (Queue.IsAllServed),
     /// only then it moves on to WaveResolving. wave_timer alone never ends the wave.
     ///
+    /// Demand release (SCRUM-24): during the arrival phase DemandRelease sends the units of every need of the wave
+    /// evenly at demand_total ÷ wave_timer to the building of that need. Arrival and seating times of the units
+    /// use WaveTime (every building's Clock is set to it).
+    ///
     /// While WavePaused the buildings of the WorkerManager stop serving (Building.IsPaused) and WaveTime stops,
     /// so nothing advances and nothing gets worse (build document §4.3).
     /// </summary>
@@ -31,6 +37,8 @@ namespace Multikulti.Waves
         float m_ArrivalTime;
         float m_DrainTime;
         bool m_ArrivalClosed;
+        readonly HashSet<Need> m_MissingBuildings = new HashSet<Need>();
+        readonly DemandRelease m_Release = new DemandRelease();
 
         public WaveStateMachine Machine { get; private set; }
         public WaveState State => Machine.State;
@@ -63,6 +71,9 @@ namespace Multikulti.Waves
         /// <summary>True after wave_timer elapsed in the current wave (the drain phase is running or done).</summary>
         public bool IsArrivalClosed => m_ArrivalClosed;
 
+        /// <summary>Demand of the current wave and how much of it has arrived (SCRUM-24).</summary>
+        public DemandRelease Release => m_Release;
+
         /// <summary>Seconds from the end of arrival until every building served all units (drain_s in playtest metrics).</summary>
         public float DrainSeconds => m_DrainTime;
 
@@ -75,6 +86,8 @@ namespace Multikulti.Waves
             Machine.StateChanged += OnStateChanged;
             ReportState();
         }
+
+        void Start() => SetBuildingsClock();
 
         void OnDestroy()
         {
@@ -107,6 +120,7 @@ namespace Multikulti.Waves
             if (!m_ArrivalClosed)
             {
                 m_ArrivalTime += deltaTime;
+                m_Release.Advance(m_ArrivalTime, SendUnit);
                 if (m_ArrivalTime >= WaveTimer) CloseArrival();
                 return;
             }
@@ -127,6 +141,7 @@ namespace Multikulti.Waves
         {
             if (Machine.State != WaveState.WaveActive || m_ArrivalClosed) return;
             m_ArrivalClosed = true;
+            m_Release.ReleaseRemaining(SendUnit);
             Debug.Log($"Wave {Machine.Wave}: arrival closed after {m_ArrivalTime:0.0} s, drain starts");
             ArrivalClosed?.Invoke();
         }
@@ -162,6 +177,9 @@ namespace Multikulti.Waves
                 m_ArrivalTime = 0f;
                 m_DrainTime = 0f;
                 m_ArrivalClosed = false;
+                m_Release.Begin(CurrentWave(), WaveTimer);
+                m_MissingBuildings.Clear();
+                SetBuildingsClock();
                 PlaytestMetrics.WaveStarted(Machine.Wave);
             }
 
@@ -170,6 +188,51 @@ namespace Multikulti.Waves
 
             ReportState();
             Debug.Log($"Wave {Machine.Wave}: {previous.ToJiraName()} → {next.ToJiraName()}");
+        }
+
+        WaveDefinition CurrentWave()
+        {
+            var waves = WaveConfig.Current.Waves;
+            var index = Machine.Wave - 1;
+            return index >= 0 && index < waves.Count ? waves[index] : null;
+        }
+
+        /// <summary>
+        /// Sends one arriving unit to the building of its need (SCRUM-24). With several buildings of one need
+        /// the unit goes to the one with the fewest pending units.
+        /// </summary>
+        void SendUnit(Need need)
+        {
+            Building target = null;
+            if (workers != null)
+            {
+                foreach (var building in workers.Buildings)
+                {
+                    if (building == null || building.Need != need || building.Queue == null) continue;
+                    if (target == null || building.Queue.PendingCount < target.Queue.PendingCount)
+                        target = building;
+                }
+            }
+
+            if (target == null)
+            {
+                if (m_MissingBuildings.Add(need))
+                    Debug.LogWarning($"Wave {Machine.Wave}: no building for {need}, its units are not sent.");
+                return;
+            }
+
+            target.Queue.Enqueue(new Unit(need, m_WaveTime), m_WaveTime);
+        }
+
+        /// <summary>Puts every building on WaveTime, so arrival and seating use one clock (SCRUM-24).</summary>
+        void SetBuildingsClock()
+        {
+            if (workers == null) return;
+            foreach (var building in workers.Buildings)
+            {
+                if (building != null)
+                    building.Clock = () => m_WaveTime;
+            }
         }
 
         void SetBuildingsPaused(bool paused)

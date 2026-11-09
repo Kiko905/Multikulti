@@ -1,3 +1,4 @@
+using System;
 using System.Text;
 using Multikulti.Config;
 using UnityEngine;
@@ -15,6 +16,16 @@ namespace Multikulti.Buildings
 
         /// <summary>While true the service does not advance (WavePaused, SCRUM-26); set by WaveLoop.</summary>
         public bool IsPaused { get; set; }
+
+        /// <summary>
+        /// Clock for arrival and seating times of units. WaveLoop sets it to its WaveTime (SCRUM-24), so the times
+        /// of Unit.ArrivedAt and Unit.SeatedAt are on the same clock and a pause adds no waiting.
+        /// Without a WaveLoop the building falls back to Time.time.
+        /// </summary>
+        public Func<float> Clock { get; set; }
+
+        /// <summary>Current time on the building's clock.</summary>
+        public float Now => Clock != null ? Clock() : Time.time;
 
         public bool HasWorker
         {
@@ -40,7 +51,7 @@ namespace Multikulti.Buildings
         void Update()
         {
             if (!IsPaused)
-                Queue.Tick(Time.deltaTime, Time.time);
+                Queue.Tick(Time.deltaTime, Now);
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             Queue.AssertNoUnitLost();
 #endif
