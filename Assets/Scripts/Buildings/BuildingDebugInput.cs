@@ -17,17 +17,17 @@ namespace Multikulti.Buildings
             var queue = m_Building.Queue;
 
             if (keyboard.spaceKey.wasPressedThisFrame)
-                queue.Enqueue(new Unit(m_Building.Need, Time.time), Time.time);
+                queue.Enqueue(new Unit(m_Building.Need, m_Building.Now), m_Building.Now);
 
             if (keyboard.wKey.wasPressedThisFrame)
             {
                 for (var i = 0; i < 20; i++)
-                    queue.Enqueue(new Unit(m_Building.Need, Time.time), Time.time);
+                    queue.Enqueue(new Unit(m_Building.Need, m_Building.Now), m_Building.Now);
                 Debug.Log($"{m_Building.Need}: +20 units, backlog {queue.BacklogCount}");
             }
 
             if (keyboard.sKey.wasPressedThisFrame && queue.Seated.Count > 0)
-                queue.CompleteService(queue.Seated[0], Time.time);
+                queue.CompleteService(queue.Seated[0], m_Building.Now);
 
             if (keyboard.eKey.wasPressedThisFrame)
             {
