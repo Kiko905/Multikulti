@@ -24,6 +24,10 @@ namespace Multikulti.Waves
     /// evenly at demand_total ÷ wave_timer to the building of that need. Arrival and seating times of the units
     /// use WaveTime (every building's Clock is set to it).
     ///
+    /// Waiting (SCRUM-42): when a building seats a unit during the wave, its waiting (arrival → seated) goes
+    /// into Waits; the service time is not counted. Waits is cleared on Start Wave and summarised in the log
+    /// when the wave resolves.
+    ///
     /// While WavePaused the buildings of the WorkerManager stop serving (Building.IsPaused) and WaveTime stops,
     /// so nothing advances and nothing gets worse (build document §4.3).
     /// </summary>
@@ -39,6 +43,8 @@ namespace Multikulti.Waves
         bool m_ArrivalClosed;
         readonly HashSet<Need> m_MissingBuildings = new HashSet<Need>();
         readonly DemandRelease m_Release = new DemandRelease();
+        readonly WaveWaitLog m_Waits = new WaveWaitLog();
+        readonly List<BuildingQueue> m_ObservedQueues = new List<BuildingQueue>();
 
         public WaveStateMachine Machine { get; private set; }
         public WaveState State => Machine.State;
@@ -74,6 +80,9 @@ namespace Multikulti.Waves
         /// <summary>Demand of the current wave and how much of it has arrived (SCRUM-24).</summary>
         public DemandRelease Release => m_Release;
 
+        /// <summary>Waiting of every unit seated in the current wave (SCRUM-42).</summary>
+        public WaveWaitLog Waits => m_Waits;
+
         /// <summary>Seconds from the end of arrival until every building served all units (drain_s in playtest metrics).</summary>
         public float DrainSeconds => m_DrainTime;
 
@@ -87,12 +96,19 @@ namespace Multikulti.Waves
             ReportState();
         }
 
-        void Start() => SetBuildingsClock();
+        void Start()
+        {
+            SetBuildingsClock();
+            ObserveBuildings();
+        }
 
         void OnDestroy()
         {
             if (Machine != null)
                 Machine.StateChanged -= OnStateChanged;
+            foreach (var queue in m_ObservedQueues)
+                queue.UnitSeated -= OnUnitSeated;
+            m_ObservedQueues.Clear();
         }
 
         void Update()
@@ -129,6 +145,7 @@ namespace Multikulti.Waves
             if (AllBuildingsServed())
             {
                 Debug.Log($"Wave {Machine.Wave}: all units served, drain {m_DrainTime:0.0} s");
+                LogWaits();
                 Machine.Resolve();
             }
         }
@@ -179,7 +196,9 @@ namespace Multikulti.Waves
                 m_ArrivalClosed = false;
                 m_Release.Begin(CurrentWave(), WaveTimer);
                 m_MissingBuildings.Clear();
+                m_Waits.Clear();
                 SetBuildingsClock();
+                ObserveBuildings();
                 PlaytestMetrics.WaveStarted(Machine.Wave);
             }
 
@@ -232,6 +251,36 @@ namespace Multikulti.Waves
             {
                 if (building != null)
                     building.Clock = () => m_WaveTime;
+            }
+        }
+
+        /// <summary>Listens to UnitSeated of every building once; buildings added later join on the next Start Wave.</summary>
+        void ObserveBuildings()
+        {
+            if (workers == null) return;
+            foreach (var building in workers.Buildings)
+            {
+                var queue = building != null ? building.Queue : null;
+                if (queue == null || m_ObservedQueues.Contains(queue)) continue;
+                queue.UnitSeated += OnUnitSeated;
+                m_ObservedQueues.Add(queue);
+            }
+        }
+
+        void OnUnitSeated(Unit unit)
+        {
+            if (Machine.State.IsInWave())
+                m_Waits.Record(unit);
+        }
+
+        void LogWaits()
+        {
+            foreach (Need need in Enum.GetValues(typeof(Need)))
+            {
+                var waits = m_Waits.Waits(need);
+                if (waits.Count == 0) continue;
+                Debug.Log($"Wave {Machine.Wave}: {need} waiting avg {m_Waits.Average(need):0.0} s, " +
+                          $"max {m_Waits.Max(need):0.0} s ({waits.Count} units)");
             }
         }
 
