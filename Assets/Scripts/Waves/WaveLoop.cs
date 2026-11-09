@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using Multikulti.Buildings;
 using Multikulti.Config;
 using Multikulti.Diagnostics;
 using Multikulti.Workers;
@@ -18,6 +20,10 @@ namespace Multikulti.Waves
     /// guests come; the wave keeps running until every building has served all its units (Queue.IsAllServed),
     /// only then it moves on to WaveResolving. wave_timer alone never ends the wave.
     ///
+    /// Waiting (SCRUM-42): when a building seats a unit during the wave, its waiting (arrival → seated) goes
+    /// into Waits; the service time is not counted. Waits is cleared on Start Wave and summarised in the log
+    /// when the wave resolves.
+    ///
     /// While WavePaused the buildings of the WorkerManager stop serving (Building.IsPaused) and WaveTime stops,
     /// so nothing advances and nothing gets worse (build document §4.3).
     /// </summary>
@@ -31,6 +37,8 @@ namespace Multikulti.Waves
         float m_ArrivalTime;
         float m_DrainTime;
         bool m_ArrivalClosed;
+        readonly WaveWaitLog m_Waits = new WaveWaitLog();
+        readonly List<BuildingQueue> m_ObservedQueues = new List<BuildingQueue>();
 
         public WaveStateMachine Machine { get; private set; }
         public WaveState State => Machine.State;
@@ -63,6 +71,9 @@ namespace Multikulti.Waves
         /// <summary>True after wave_timer elapsed in the current wave (the drain phase is running or done).</summary>
         public bool IsArrivalClosed => m_ArrivalClosed;
 
+        /// <summary>Waiting of every unit seated in the current wave (SCRUM-42).</summary>
+        public WaveWaitLog Waits => m_Waits;
+
         /// <summary>Seconds from the end of arrival until every building served all units (drain_s in playtest metrics).</summary>
         public float DrainSeconds => m_DrainTime;
 
@@ -76,10 +87,15 @@ namespace Multikulti.Waves
             ReportState();
         }
 
+        void Start() => ObserveBuildings();
+
         void OnDestroy()
         {
             if (Machine != null)
                 Machine.StateChanged -= OnStateChanged;
+            foreach (var queue in m_ObservedQueues)
+                queue.UnitSeated -= OnUnitSeated;
+            m_ObservedQueues.Clear();
         }
 
         void Update()
@@ -115,6 +131,7 @@ namespace Multikulti.Waves
             if (AllBuildingsServed())
             {
                 Debug.Log($"Wave {Machine.Wave}: all units served, drain {m_DrainTime:0.0} s");
+                LogWaits();
                 Machine.Resolve();
             }
         }
@@ -162,6 +179,8 @@ namespace Multikulti.Waves
                 m_ArrivalTime = 0f;
                 m_DrainTime = 0f;
                 m_ArrivalClosed = false;
+                m_Waits.Clear();
+                ObserveBuildings();
                 PlaytestMetrics.WaveStarted(Machine.Wave);
             }
 
@@ -170,6 +189,36 @@ namespace Multikulti.Waves
 
             ReportState();
             Debug.Log($"Wave {Machine.Wave}: {previous.ToJiraName()} → {next.ToJiraName()}");
+        }
+
+        /// <summary>Listens to UnitSeated of every building once; buildings added later join on the next Start Wave.</summary>
+        void ObserveBuildings()
+        {
+            if (workers == null) return;
+            foreach (var building in workers.Buildings)
+            {
+                var queue = building != null ? building.Queue : null;
+                if (queue == null || m_ObservedQueues.Contains(queue)) continue;
+                queue.UnitSeated += OnUnitSeated;
+                m_ObservedQueues.Add(queue);
+            }
+        }
+
+        void OnUnitSeated(Unit unit)
+        {
+            if (Machine.State.IsInWave())
+                m_Waits.Record(unit);
+        }
+
+        void LogWaits()
+        {
+            foreach (Need need in Enum.GetValues(typeof(Need)))
+            {
+                var waits = m_Waits.Waits(need);
+                if (waits.Count == 0) continue;
+                Debug.Log($"Wave {Machine.Wave}: {need} waiting avg {m_Waits.Average(need):0.0} s, " +
+                          $"max {m_Waits.Max(need):0.0} s ({waits.Count} units)");
+            }
         }
 
         void SetBuildingsPaused(bool paused)

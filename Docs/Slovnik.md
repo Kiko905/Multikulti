@@ -88,6 +88,7 @@ Kontrolu robí `Assets/Editor/Naming/BannedTermsCheck.cs`: pred každým buildom
 | arrival | `IsArrivalOpen`, `ArrivalTime` | fáza príchodu: prvých `wave_timer` sekúnd `WaveActive`, prichádzajú noví hostia | SCRUM-24, SCRUM-25 |
 | drain | `IsArrivalClosed`, `DrainSeconds` | dobeh: príchod je uzavretý, budovy obsluhujú zvyšok radov | SCRUM-25 |
 | paused | `IsPaused` | vlna je v `WavePaused`; budova vtedy neobsluhuje | SCRUM-26 |
+| waiting | `WaitingSeconds`, `WaveWaitLog`, `UnitWait` | čakanie jednotky od príchodu po usadenie; čas obsluhy sa nepočíta, počas `WavePaused` nerastie | SCRUM-42 |
 | Wave Satisfaction | `WaveSatisfaction` | spokojnosť vlny 0–100 % | SCRUM-43 |
 | rating | `Rating` | 1★–5★ alebo Perfect | SCRUM-44 |
 | Coins | `Coins` | mena za vlny | SCRUM-45 |
