@@ -46,6 +46,58 @@ MonoBehaviour:
     m_Localized: Worker
     m_Metadata:
       m_Items: []
+  - m_Id: 5237297274884102
+    m_Localized: Resort Value
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884103
+    m_Localized: Coins
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884104
+    m_Localized: Energy
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884105
+    m_Localized: Ready for Guests
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884106
+    m_Localized: Wave in progress
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884107
+    m_Localized: Wave paused
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884108
+    m_Localized: Wave complete
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884109
+    m_Localized: All waves done
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884110
+    m_Localized: Reception
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884111
+    m_Localized: Beach Bar
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884112
+    m_Localized: Restaurant
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884113
+    m_Localized: Pool
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884114
+    m_Localized: Bungalows
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

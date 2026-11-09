@@ -1097,8 +1097,125 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Multikulti.Waves.ShipArrival
   waveLoop: {fileID: 2100000003}
   ship: {fileID: 0}
-  sailFrom: {x: -16, y: 0.3, z: 6}
-  dockAt: {x: -8.5, y: 0.3, z: 2}
+  sailFrom: {x: -17, y: -0.8, z: -9}
+  dockAt: {x: -6.6, y: -0.8, z: -6.2}
+--- !u!1 &2400000001
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2400000002}
+  - component: {fileID: 2400000003}
+  - component: {fileID: 2400000004}
+  - component: {fileID: 2400000005}
+  - component: {fileID: 2400000006}
+  m_Layer: 0
+  m_Name: Home
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2400000002
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2400000001}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2400000003
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2400000001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe8f19518a61fd5d627e812df0a97985, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::Multikulti.Economy.ResortBalances
+  coins: 0
+  energy: 0
+  resortValue: 0
+--- !u!114 &2400000004
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2400000001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 917796a18679511f1f0c3d04bf18e09c, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::Multikulti.Island.IslandMap
+  waveLoop: {fileID: 2100000003}
+  islandRadius: 7.5
+  grassPart: 0.78
+  groundHeight: -0.5
+  seaLevel: -0.65
+  pierStart: {x: -3.3, y: 0, z: -6.55}
+  pierEnd: {x: -7.05, y: 0, z: -7.55}
+  berthRadius: 2.2
+  constructionSites:
+  - need: 3
+    position: {x: -4, y: 0, z: 3}
+    size: {x: 2.6, y: 2.6}
+  - need: 4
+    position: {x: 2, y: 0, z: -4.5}
+    size: {x: 3, y: 2.2}
+--- !u!114 &2400000005
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2400000001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6075dbf3608e76f7f55fb05fcb527b86, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::Multikulti.Island.IslandCamera
+  targetCamera: {fileID: 330585545}
+  map: {fileID: 2400000004}
+  pitch: 30
+  yaw: -45
+  distance: 40
+  topReserve: 120
+  bottomReserve: 24
+  sideReserve: 24
+  padding: 0.03
+  background: {r: 0.16, g: 0.52, b: 0.62, a: 1}
+--- !u!114 &2400000006
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2400000001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1680df260099aff208b5cfbd32e37e8b, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::Multikulti.UI.HomeHud
+  waveLoop: {fileID: 2100000003}
+  map: {fileID: 2400000004}
+  balances: {fileID: 2400000003}
+  fontSize: 30
+  margin: 32
+  barHeight: 72
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -1113,3 +1230,4 @@ SceneRoots:
   - {fileID: 2100000002}
   - {fileID: 2200000002}
   - {fileID: 2300000002}
+  - {fileID: 2400000002}

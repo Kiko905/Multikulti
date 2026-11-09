@@ -93,6 +93,12 @@ Kontrolu robí `Assets/Editor/Naming/BannedTermsCheck.cs`: pred každým buildom
 | waiting | `WaitingSeconds`, `WaveWaitLog`, `UnitWait` | čakanie jednotky od príchodu po usadenie; čas obsluhy sa nepočíta, počas `WavePaused` nerastie | SCRUM-42 |
 | Start Wave | `StartWaveButton` | tlačidlo, ktoré spustí vlnu (`AwaitingWave` → `WaveIncoming`); viditeľné len keď `CanStartWave` | SCRUM-23 |
 | ship arrival | `ShipArrival`, `IncomingProgress` | loď s hosťami pripláva počas `WaveIncoming`, pri móle je presne pri prechode do `WaveActive` | SCRUM-23 |
+| Home | `HomeHud` | domovská obrazovka (UI handoff S1): top bar s Resort Value a menami, stav rezortu a značky budov a stavenísk nad mapou | SCRUM-21 |
+| island map | `IslandMap` | mapa ostrova: more, ostrov, mólo, budovy zo scény a staveniská | SCRUM-21 |
+| island camera | `IslandCamera` | izometrická (ortografická) kamera; zarámuje celý ostrov na každom pomere strán 4:3 – 21:9 a nechá voľné miesto pre top bar | SCRUM-21 |
+| construction site | `ConstructionSite`, `VisibleSites` | stavenisko budovy, ktorá ešte nie je postavená (Pool → Relax, Bungalows → Ocean View); vidno ho, kým v scéne nie je budova s jeho needom | SCRUM-21, SCRUM-53 |
+| resort status | `ResortStatus`, `ResortStatusRules` | stav rezortu na Home: Ready for Guests, Wave in progress, Wave paused, Wave complete, All waves done | SCRUM-21 |
+| balances | `ResortBalances` | zostatky Coins, Energy a Resort Value pre top bar; odkiaľ sa berú, riešia SCRUM-45, SCRUM-55, SCRUM-56 a SCRUM-59 | SCRUM-21 |
 | Wave Satisfaction | `WaveSatisfaction` | spokojnosť vlny 0–100 % | SCRUM-43 |
 | rating | `Rating` | 1★–5★ alebo Perfect | SCRUM-44 |
 | Coins | `Coins` | mena za vlny | SCRUM-45 |

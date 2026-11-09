@@ -43,6 +43,58 @@ MonoBehaviour:
     m_Key: wave_needs.worker
     m_Metadata:
       m_Items: []
+  - m_Id: 5237297274884102
+    m_Key: home.resort_value
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884103
+    m_Key: home.coins
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884104
+    m_Key: home.energy
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884105
+    m_Key: home.status.ready
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884106
+    m_Key: home.status.wave
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884107
+    m_Key: home.status.paused
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884108
+    m_Key: home.status.complete
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884109
+    m_Key: home.status.finished
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884110
+    m_Key: building.rooms
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884111
+    m_Key: building.drinks
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884112
+    m_Key: building.food
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884113
+    m_Key: building.relax
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884114
+    m_Key: building.ocean_view
+    m_Metadata:
+      m_Items: []
   m_Metadata:
     m_Items: []
   m_KeyGenerator:
