@@ -91,6 +91,8 @@ Kontrolu robí `Assets/Editor/Naming/BannedTermsCheck.cs`: pred každým buildom
 | drain | `IsArrivalClosed`, `DrainSeconds` | dobeh: príchod je uzavretý, budovy obsluhujú zvyšok radov | SCRUM-25 |
 | paused | `IsPaused` | vlna je v `WavePaused`; budova vtedy neobsluhuje | SCRUM-26 |
 | waiting | `WaitingSeconds`, `WaveWaitLog`, `UnitWait` | čakanie jednotky od príchodu po usadenie; čas obsluhy sa nepočíta, počas `WavePaused` nerastie | SCRUM-42 |
+| Start Wave | `StartWaveButton` | tlačidlo, ktoré spustí vlnu (`AwaitingWave` → `WaveIncoming`); viditeľné len keď `CanStartWave` | SCRUM-23 |
+| ship arrival | `ShipArrival`, `IncomingProgress` | loď s hosťami pripláva počas `WaveIncoming`, pri móle je presne pri prechode do `WaveActive` | SCRUM-23 |
 | Wave Satisfaction | `WaveSatisfaction` | spokojnosť vlny 0–100 % | SCRUM-43 |
 | rating | `Rating` | 1★–5★ alebo Perfect | SCRUM-44 |
 | Coins | `Coins` | mena za vlny | SCRUM-45 |

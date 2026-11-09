@@ -13,7 +13,7 @@ namespace Multikulti.Waves
     /// Reports every state change to crash reporting (SCRUM-100) and Start Wave to playtest metrics (SCRUM-93).
     ///
     /// Graybox behaviour until the related stories are done:
-    /// WaveIncoming moves on to WaveActive after incomingSeconds (the ship animation comes with SCRUM-23),
+    /// WaveIncoming moves on to WaveActive after incomingSeconds, while ShipArrival sails the ship in (SCRUM-23),
     /// and WaveResolving moves on to WaveComplete in the next frame (the result comes with SCRUM-43).
     ///
     /// Arrival and drain (SCRUM-25): wave_timer seconds after WaveActive starts, arrival closes and no new
@@ -49,6 +49,20 @@ namespace Multikulti.Waves
         public WaveStateMachine Machine { get; private set; }
         public WaveState State => Machine.State;
         public int Wave => Machine.Wave;
+
+        /// <summary>Length of WaveIncoming (the ship sails in, SCRUM-23).</summary>
+        public float IncomingSeconds => incomingSeconds;
+
+        /// <summary>
+        /// How far the ship got (SCRUM-23): 0 before Start Wave, 0 → 1 during WaveIncoming, 1 from WaveActive
+        /// until the wave is over.
+        /// </summary>
+        public float IncomingProgress => Machine.State switch
+        {
+            WaveState.AwaitingWave => 0f,
+            WaveState.WaveIncoming => incomingSeconds > 0f ? Mathf.Clamp01(m_StateTime / incomingSeconds) : 1f,
+            _ => 1f
+        };
 
         /// <summary>Seconds spent in the current state; the time stops while WavePaused.</summary>
         public float StateTime => m_StateTime;
