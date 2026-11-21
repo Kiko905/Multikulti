@@ -888,6 +888,7 @@ MonoBehaviour:
   - {fileID: 98051307}
   - {fileID: 542729977}
   - {fileID: 950871072}
+  waveLoop: {fileID: 0}
 --- !u!4 &1945898637
 Transform:
   m_ObjectHideFlags: 0
@@ -938,7 +939,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 9f12a0a65446217e05a90e1bd7c569fb, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Multikulti.Workers.WorkerMoveFeedback
   workerColor: {r: 1, g: 0.76, b: 0.18, a: 1}
   emptyBrightness: 0.5
@@ -965,6 +966,7 @@ GameObject:
   - component: {fileID: 2100000002}
   - component: {fileID: 2100000003}
   - component: {fileID: 2100000004}
+  - component: {fileID: 2100000005}
   m_Layer: 0
   m_Name: WaveLoop
   m_TagString: Untagged
@@ -1013,6 +1015,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: da6442398fc44e108683038f7585c970, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Multikulti.Waves.WaveLoopDebugInput
+--- !u!114 &2100000005
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2100000001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 78d18bb7ba4857949b36ea9661ab7255, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Multikulti.Waves.NeedStateBoard
+  waveLoop: {fileID: 2100000003}
+  workers: {fileID: 1945898636}
 --- !u!1 &2200000001
 GameObject:
   m_ObjectHideFlags: 0
@@ -1055,12 +1071,13 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 923f0f87131308214307b915b6d290ca, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Multikulti.UI.WaveNeedsPanel
   waveLoop: {fileID: 2100000003}
   workers: {fileID: 1945898636}
   fontSize: 32
   margin: 32
+  topOffset: 140
 --- !u!1 &2300000001
 GameObject:
   m_ObjectHideFlags: 0
@@ -1104,7 +1121,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 15c217591c714722a2366bbd3d9a4315, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Multikulti.UI.StartWaveButton
   waveLoop: {fileID: 2100000003}
   fontSize: 44
@@ -1120,7 +1137,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f5813bdc324b4928bd007143e1289d6a, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Multikulti.Waves.ShipArrival
   waveLoop: {fileID: 2100000003}
   ship: {fileID: 0}
@@ -1171,7 +1188,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe8f19518a61fd5d627e812df0a97985, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Multikulti.Economy.ResortBalances
   coins: 0
   energy: 0
@@ -1186,7 +1203,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 917796a18679511f1f0c3d04bf18e09c, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Multikulti.Island.IslandMap
   waveLoop: {fileID: 2100000003}
   islandRadius: 7.5
@@ -1213,7 +1230,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 6075dbf3608e76f7f55fb05fcb527b86, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Multikulti.Island.IslandCamera
   targetCamera: {fileID: 330585545}
   map: {fileID: 2400000004}
@@ -1235,7 +1252,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1680df260099aff208b5cfbd32e37e8b, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Multikulti.UI.HomeHud
   waveLoop: {fileID: 2100000003}
   map: {fileID: 2400000004}

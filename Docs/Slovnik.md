@@ -30,10 +30,10 @@ Kontrolu robí `Assets/Editor/Naming/BannedTermsCheck.cs`: pred každým buildom
 ## Stavy needu (SCRUM-32, SCRUM-34)
 | Jira | C# enum `NeedState` | UI (EN) | Význam |
 | --- | --- | --- | --- |
-| OK | `Ok` | — | rad je v norme |
-| BOTTLENECK | `Bottleneck` | warning | rad presiahol `bottleneck_threshold` |
-| RECOVERING | `Recovering` | „… is catching up“ | rad sa zmenšuje |
-| SATISFIED | `Satisfied` | — | všetky jednotky needu obslúžené |
+| OK | `Ok` | — | rad je pod `bottleneck_threshold`, alebo nad ním ešte kratšie než `bottleneck_hysteresis_s` |
+| BOTTLENECK | `Bottleneck` | warning | rad je ≥ `bottleneck_threshold` aspoň `bottleneck_hysteresis_s` sekúnd |
+| RECOVERING | `Recovering` | „… is catching up“ | po BOTTLENECK rad klesol pod prah; po `bottleneck_hysteresis_s` pod prahom → OK, nad prahom hneď späť BOTTLENECK |
+| SATISFIED | `Satisfied` | — | prišiel celý demand needu vo vlne a všetky jednotky sú obslúžené; do konca vlny sa nemení |
 | LOCKED | `Locked` | — | budova ešte nie je kúpená |
 
 ## Stavy VIP requestu (SCRUM-62)
@@ -117,6 +117,10 @@ Kontrolu robí `Assets/Editor/Naming/BannedTermsCheck.cs`: pred každým buildom
 | Wave Needs Panel | `WaveNeedsPanel` | panel vedľa ostrova počas vlny (`WaveIncoming`, `WaveActive`, `WavePaused`): pre každý aktívny need obslúžené / celkové jednotky vlny a značka Worker, ak na budove needu stojí Worker | SCRUM-29 |
 | active need | — | need, ktorý má vo vlne demand > 0, alebo doň aj tak prišli jednotky; len taký need má riadok vo Wave Needs Panel | SCRUM-29 |
 | need progress | `NeedProgress`, `WaveNeedsProgress` | obslúžené a celkové jednotky needu od Start Wave; celkové = demand z `wave_config.json`, alebo viac, ak prišlo viac jednotiek (Sudden rush) | SCRUM-29 |
+| need state | `NeedState` | stav needu vo vlne: OK, BOTTLENECK, RECOVERING, SATISFIED (LOCKED pribudne v SCRUM-34) | SCRUM-32 |
+| need state tracker | `NeedStateTracker` | prechody stavov jedného needu s hysteréziou, čisté C# | SCRUM-32 |
+| need state board | `NeedStateBoard` | v scéne posúva stavy všetkých needov; rad needu = súčet backlogov všetkých jeho budov; na Start Wave vráti needy na OK; udalosť `StateChanged` | SCRUM-32 |
+| hysteresis | `bottleneck_hysteresis_s` | koľko sekúnd musí podmienka platiť, kým need prejde OK → BOTTLENECK alebo RECOVERING → OK | SCRUM-32 |
 
 ## Zjednotené
 - Utilization budovy s Workerom: `utilization_worker` (od SCRUM-96 existuje len jeden config, `tools/config.json` bol zmazaný).
