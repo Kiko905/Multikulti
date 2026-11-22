@@ -124,7 +124,25 @@ Kontrolu robí `Assets/Editor/Naming/BannedTermsCheck.cs`: pred každým buildom
 | level | `Level`, `MaxLevel`, `IsMaxLevel` | level budovy 1–3; určuje capacity podľa `capacity_by_level` (3 → 5 → 7) | SCRUM-50 |
 | level up | `LevelUp` | zvýši level budovy o 1 a hneď zväčší capacity; čakajúce jednotky sa posadia na nové miesta | SCRUM-50 |
 | upgrade service | `UpgradeService`, `PriceOf`, `CanUpgrade`, `TryUpgrade` | nákup upgradu za Coins: cena z `upgrade_prices`, odpočíta Coins a zavolá `LevelUp`; udalosť `Upgraded`; budova sama o peniazoch nevie | SCRUM-50 |
+| currency wallet | `CurrencyWallet`, `Balance`, `Add`, `TrySpend`, `CanAfford`, `Missing` | zostatok jednej meny, čisté C#; meniť ho dá len cez `Add` (napr. odmena za vlnu) a `TrySpend` (upgrade, unlock), nikdy neklesne pod 0; udalosť `Changed` (starý zostatok, nový zostatok, dôvod); rovnakú triedu použije aj Energy | SCRUM-55 |
+| coin wallet | `ResortBalances.CoinWallet` | peňaženka Coins v scéne; `Coins` sa dá už len čítať, pripisuje sa cez `CoinWallet.Add` (SCRUM-45) | SCRUM-55 |
+| missing coins | `Missing`, `UpgradeService.MissingCoins`, `economy.missing_coins` | koľko Coins chýba na cenu; text v UI „Missing: {0} Coins“ z tabuľky `UI` | SCRUM-55 |
 
 ## Zjednotené
 - Utilization budovy s Workerom: `utilization_worker` (od SCRUM-96 existuje len jeden config, `tools/config.json` bol zmazaný).
 - Utilization budovy bez Workera: `utilization_empty` (namiesto zakázaného „idle“).
+
+## Debug klávesy
+Pred pridaním nového debug klávesu over, že tu ešte nie je, a zapíš ho sem.
+
+| Kláves | Skript | Čo robí | Jira |
+| --- | --- | --- | --- |
+| Space | `BuildingDebugInput` | +1 jednotka do budovy | SCRUM-30 |
+| S | `BuildingDebugInput` | dokončí obsluhu prvej sediacej jednotky | SCRUM-30 |
+| W | `BuildingDebugInput` | +20 jednotiek do budovy | SCRUM-35 |
+| E | `BuildingDebugInput` | rýchlosť obsluhy ×2 / ×1 | SCRUM-38 |
+| P | `WaveLoopDebugInput` | pauza / pokračovanie vlny | SCRUM-26 |
+| L | `WaveLoopDebugInput` | posunie vlnu do ďalšieho stavu | SCRUM-26 |
+| N | `WorkerManagerDebugInput` | pridá budovu a Workera | SCRUM-38 |
+| U | `UpgradeServiceDebugInput` | upgrade všetkých budov; pri nedostatku vypíše „Missing: … Coins“ | SCRUM-50, SCRUM-55 |
+| C | `UpgradeServiceDebugInput` | +300 Coins (náhrada odmeny za vlnu) | SCRUM-55 |

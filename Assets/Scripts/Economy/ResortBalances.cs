@@ -18,15 +18,25 @@ namespace Multikulti.Economy
         [SerializeField, Min(0)] int energy;
         [SerializeField, Min(0), Tooltip("Status of the resort; it only grows.")]
         int resortValue;
+        CurrencyWallet m_CoinWallet;
 
         /// <summary>Raised after any balance changed.</summary>
         public event Action Changed;
 
-        public int Coins
+        public CurrencyWallet CoinWallet
         {
-            get => coins;
-            set => Set(ref coins, Mathf.Max(0, value));
+            get
+            {
+                if (m_CoinWallet == null)
+                {
+                    m_CoinWallet = new CurrencyWallet(Mathf.Max(0, coins));
+                    m_CoinWallet.Changed += OnCoinsChanged;
+                }
+                return m_CoinWallet;
+            }
         }
+
+        public int Coins => CoinWallet.Balance;
 
         public int Energy
         {
@@ -56,6 +66,24 @@ namespace Multikulti.Economy
             Changed?.Invoke();
         }
 
-        void OnValidate() => Changed?.Invoke();
+        void OnCoinsChanged(int oldBalance, int newBalance, string reason)
+        {
+            coins = newBalance;
+            if (Debug.isDebugBuild)
+                Debug.Log($"Coins {newBalance - oldBalance:+#;-#;0} ({reason}): {oldBalance} → {newBalance}", this);
+            Changed?.Invoke();
+        }
+
+        void OnValidate()
+        {
+            if (Application.isPlaying && m_CoinWallet != null && coins != m_CoinWallet.Balance)
+            {
+                var delta = coins - m_CoinWallet.Balance;
+                if (delta > 0) m_CoinWallet.Add(delta, "inspector");
+                else m_CoinWallet.TrySpend(-delta, "inspector");
+                return;
+            }
+            Changed?.Invoke();
+        }
     }
 }

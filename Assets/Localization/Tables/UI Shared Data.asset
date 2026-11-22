@@ -95,6 +95,10 @@ MonoBehaviour:
     m_Key: building.ocean_view
     m_Metadata:
       m_Items: []
+  - m_Id: 10204864056446976
+    m_Key: economy.missing_coins
+    m_Metadata:
+      m_Items: []
   m_Metadata:
     m_Items: []
   m_KeyGenerator:
