@@ -40,5 +40,7 @@ namespace Multikulti.Waves
         /// <summary>True while a wave is running: guests arrive or are being served.</summary>
         public static bool IsInWave(this WaveState state) =>
             state == WaveState.WaveIncoming || state == WaveState.WaveActive || state == WaveState.WavePaused;
+        public static bool IsBetweenWaves(this WaveState state) =>
+            state == WaveState.AwaitingWave || state == WaveState.Upgrade;
     }
 }
