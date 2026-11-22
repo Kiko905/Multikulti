@@ -114,11 +114,11 @@ Kontrolu robí `Assets/Editor/Naming/BannedTermsCheck.cs`: pred každým buildom
 | Speed Up | `SpeedUp` | Energy boost obsluhy | SCRUM-57 |
 | Sudden rush | `SuddenRush` | mini-event vo vlne 2 | SCRUM-60 |
 | Area Unlock | `AreaUnlock` | odomknutie Pool/Bungalows: oblasť, need, od ktorej vlny je dostupné a cena v Coins (`unlocks` v `wave_config.json`) | SCRUM-51, SCRUM-53 |
-| area unlock state | `AreaUnlockState` | stav staveniska: Locked (ešte nie je po vlne `*_after_wave`), Available (sprístupnené, ale nekúpené), Bought (v scéne už je budova s jeho needom) | SCRUM-53 |
+| area unlock state | `AreaUnlockState` | stav staveniska: Locked (ešte nie je po vlne `*_after_wave`), Available (sprístupnené, ale nekúpené), Bought (kúpené cez `TryBuy`, alebo v scéne už je budova s jeho needom) | SCRUM-53, SCRUM-51 |
 | area unlocks | `AreaUnlocks` | stavy všetkých odomknutí a počet dokončených vĺn, čisté C#; Area Unlock sa dá otvoriť len v Available a v `AwaitingWave` | SCRUM-53 |
-| area unlock service | `AreaUnlockService`, `Requested`, `TryOpen` | v scéne drží `AreaUnlocks`, kúpené odvodí z budov na `IslandMap`; udalosť `Requested` otvára obrazovku Area Unlock (SCRUM-112), pri odchode z `AwaitingWave` sa zavrie | SCRUM-53 |
+| area unlock service | `AreaUnlockService`, `Requested`, `TryOpen` | v scéne drží `AreaUnlocks`; kúpené je to, čo sa kúpilo, alebo čo už stojí na `IslandMap` (chýbajúca budova kúpu nikdy nezruší); udalosť `Requested` otvára obrazovku Area Unlock (SCRUM-112), pri odchode z `AwaitingWave` sa zavrie | SCRUM-53 |
 | site tap | `AreaUnlockSiteInput` | ťuknutie na stavenisko alebo na jeho značku „+ …“ v HUD otvorí Area Unlock; ťuknutie na budovu ostáva presunu Workera | SCRUM-53 |
-| Area Unlock debug window | `AreaUnlockDebugWindow` | dočasné okno (len editor a development build): cena, chýbajúce Coins, tlačidlo Zavrieť; pod staveniskom text „available · cena“ alebo „od vlny N“ | SCRUM-53 |
+| Area Unlock debug window | `AreaUnlockDebugWindow` | dočasné okno (len editor a development build): cena, chýbajúce Coins, dôvod z `PurchaseBlock`, tlačidlá Kúpiť a Zavrieť; pod staveniskom text „available · cena“ alebo „od vlny N“ | SCRUM-53 |
 | VIP | `Vip` | špeciálny hosť s requestami | SCRUM-61 |
 | Guest Request Board | `GuestRequestBoard` | požiadavky VIP hosťa | SCRUM-62 |
 | Wave Needs Panel | `WaveNeedsPanel` | panel vedľa ostrova počas vlny (`WaveIncoming`, `WaveActive`, `WavePaused`): pre každý aktívny need obslúžené / celkové jednotky vlny a značka Worker, ak na budove needu stojí Worker | SCRUM-29 |
@@ -133,10 +133,13 @@ Kontrolu robí `Assets/Editor/Naming/BannedTermsCheck.cs`: pred každým buildom
 | upgrade service | `UpgradeService`, `PriceOf`, `CanUpgrade`, `TryUpgrade` | nákup upgradu za Coins: cena z `upgrade_prices`, odpočíta Coins a zavolá `LevelUp`; udalosť `Upgraded`; budova sama o peniazoch nevie | SCRUM-50 |
 | currency wallet | `CurrencyWallet`, `Balance`, `Add`, `TrySpend`, `CanAfford`, `Missing` | zostatok jednej meny, čisté C#; meniť ho dá len cez `Add` (napr. odmena za vlnu) a `TrySpend` (upgrade, unlock), nikdy neklesne pod 0; udalosť `Changed` (starý zostatok, nový zostatok, dôvod); rovnakú triedu použije aj Energy | SCRUM-55 |
 | coin wallet | `ResortBalances.CoinWallet` | peňaženka Coins v scéne; `Coins` sa dá už len čítať, pripisuje sa cez `CoinWallet.Add` (SCRUM-45) | SCRUM-55 |
-| missing coins | `Missing`, `UpgradeService.MissingCoins`, `economy.missing_coins` | koľko Coins chýba na cenu; text v UI „Missing: {0} Coins“ z tabuľky `UI` | SCRUM-55 |
-| between waves | `WaveState.IsBetweenWaves()` | stavy vlny, v ktorých sa dá nakupovať (upgrade, neskôr unlock): `AwaitingWave` a `Upgrade`; počas vlny, na obrazovke výsledku ani vo `WavePaused` nie | SCRUM-49 |
+| missing coins | `Missing`, `PurchaseRules.MissingCoins`, `UpgradeService.MissingCoins`, `AreaUnlockService.MissingCoins`, `economy.missing_coins` | koľko Coins chýba na cenu; text v UI „Missing: {0} Coins“ z tabuľky `UI` | SCRUM-55 |
+| between waves | `WaveState.IsBetweenWaves()` | stavy vlny, v ktorých sa dá nakupovať (upgrade aj Area Unlock, cez `PurchaseRules`): `AwaitingWave` a `Upgrade`; počas vlny, na obrazovke výsledku ani vo `WavePaused` nie | SCRUM-49, SCRUM-51 |
 | upgrade available | `UpgradeService.IsUpgradeAvailable`, `AvailabilityChanged` | či je upgrade práve dostupný podľa stavu vlny; udalosť `AvailabilityChanged(bool)` pri zmene, aby UI ovládací prvok upgradu skrylo (`false`) alebo ukázalo (`true`) | SCRUM-49 |
-| upgrade block | `UpgradeBlock`, `UpgradeService.UpgradeBlockOf` | prečo sa budova nedá upgradnúť: `None` (dá sa), `BetweenWavesOnly` (prebieha vlna → prvok skryť), `MaxLevel` (ukázať MAX), `NotEnoughCoins` (ukázať chýbajúcu sumu); `CanUpgrade` aj `TryUpgrade` ho používajú | SCRUM-49 |
+| purchase block | `PurchaseBlock`, `UpgradeService.UpgradeBlockOf`, `AreaUnlockService.BlockOf` | prečo sa niečo nedá kúpiť (upgrade aj Area Unlock): `None` (dá sa), `BetweenWavesOnly` (prebieha vlna → prvok skryť), `NotAvailableYet` (Area Unlock pred jeho vlnou), `AlreadyOwned` (Area Unlock už kúpený), `MaxLevel` (ukázať MAX), `NotEnoughCoins` (ukázať chýbajúcu sumu); nahrádza `UpgradeBlock` | SCRUM-49, SCRUM-51 |
+| purchase offer | `PurchaseOffer`, `OfferFor` | jedna vec na kúpu: názov pre log Coins, cena a vlastný dôvod predávajúceho, prečo sa nedá kúpiť | SCRUM-51 |
+| purchase rules | `PurchaseRules`, `IsShopOpen`, `BlockOf`, `TryBuy` | jediné miesto s pravidlami nákupu za Coins pre upgrady aj Area Unlock, čisté C#: najprv stav vlny (len medzi vlnami), potom dôvod predávajúceho, potom Coins; Coins sa odpočítajú a až potom sa vec odovzdá | SCRUM-51 |
+| area unlock purchase | `AreaUnlockService.TryBuy`, `Bought` | kúpa Pool/Bungalows za Coins: odpočíta cenu, označí Bought, zavrie Area Unlock a vyvolá udalosť `Bought`, na ktorú SCRUM-52 postaví budovu, need a Workera | SCRUM-51 |
 
 ## Zjednotené
 - Utilization budovy s Workerom: `utilization_worker` (od SCRUM-96 existuje len jeden config, `tools/config.json` bol zmazaný).

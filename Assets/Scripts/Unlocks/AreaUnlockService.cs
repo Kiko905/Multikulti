@@ -1,6 +1,7 @@
 using System;
 using Multikulti.Buildings;
 using Multikulti.Config;
+using Multikulti.Economy;
 using Multikulti.Island;
 using Multikulti.Waves;
 using UnityEngine;
@@ -11,14 +12,17 @@ namespace Multikulti.Unlocks
     {
         [SerializeField] WaveLoop waveLoop;
         [SerializeField] IslandMap map;
+        [SerializeField] ResortBalances balances;
 
         AreaUnlock? m_Open;
+        PurchaseRules m_Rules;
 
         public AreaUnlocks Unlocks { get; private set; }
 
         public event Action<AreaUnlock> Requested;
         public event Action Closed;
         public event Action Changed;
+        public event Action<AreaUnlock> Bought;
 
         public WaveState WaveState => waveLoop != null && waveLoop.Machine != null ? waveLoop.State : WaveState.AwaitingWave;
 
@@ -38,6 +42,9 @@ namespace Multikulti.Unlocks
                 waveLoop = FindAnyObjectByType<WaveLoop>();
             if (map == null)
                 map = FindAnyObjectByType<IslandMap>();
+            if (balances == null)
+                balances = FindAnyObjectByType<ResortBalances>();
+            m_Rules = new PurchaseRules(() => balances.CoinWallet, () => WaveState);
 
             var config = WaveConfig.Current.Unlocks;
             Unlocks = new AreaUnlocks(new[]
@@ -81,6 +88,37 @@ namespace Multikulti.Unlocks
             return true;
         }
 
+        public PurchaseOffer OfferFor(Need need)
+        {
+            var unlock = Unlocks.Get(need);
+            var block = StateOf(need) switch
+            {
+                AreaUnlockState.Bought => PurchaseBlock.AlreadyOwned,
+                AreaUnlockState.Locked => PurchaseBlock.NotAvailableYet,
+                _ => PurchaseBlock.None
+            };
+            return new PurchaseOffer($"area unlock {unlock.Area}", unlock.Price, block);
+        }
+
+        public PurchaseBlock BlockOf(Need need) => m_Rules.BlockOf(OfferFor(need));
+
+        public bool CanBuy(Need need) => m_Rules.CanBuy(OfferFor(need));
+
+        public int MissingCoins(Need need) => m_Rules.MissingCoins(OfferFor(need));
+
+        public bool TryBuy(Need need)
+        {
+            var unlock = Unlocks.Get(need);
+            if (!m_Rules.TryBuy(OfferFor(need), () => Unlocks.SetBought(need, true)))
+                return false;
+
+            Debug.Log($"Area Unlock {unlock.Area} kúpený za {unlock.Price} Coins ({need} sa odomkne od ďalšej vlny)");
+            Bought?.Invoke(unlock);
+            Close();
+            Changed?.Invoke();
+            return true;
+        }
+
         public void Close()
         {
             if (!m_Open.HasValue) return;
@@ -99,7 +137,10 @@ namespace Multikulti.Unlocks
         {
             var changed = false;
             foreach (var unlock in Unlocks.All)
-                changed |= Unlocks.SetBought(unlock.Need, HasBuilding(unlock.Need));
+            {
+                if (HasBuilding(unlock.Need))
+                    changed |= Unlocks.SetBought(unlock.Need, true);
+            }
             if (m_Open.HasValue && Unlocks.IsBought(m_Open.Value.Need))
                 Close();
             if (changed)
