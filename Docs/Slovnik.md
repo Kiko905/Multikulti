@@ -127,6 +127,9 @@ Kontrolu robí `Assets/Editor/Naming/BannedTermsCheck.cs`: pred každým buildom
 | currency wallet | `CurrencyWallet`, `Balance`, `Add`, `TrySpend`, `CanAfford`, `Missing` | zostatok jednej meny, čisté C#; meniť ho dá len cez `Add` (napr. odmena za vlnu) a `TrySpend` (upgrade, unlock), nikdy neklesne pod 0; udalosť `Changed` (starý zostatok, nový zostatok, dôvod); rovnakú triedu použije aj Energy | SCRUM-55 |
 | coin wallet | `ResortBalances.CoinWallet` | peňaženka Coins v scéne; `Coins` sa dá už len čítať, pripisuje sa cez `CoinWallet.Add` (SCRUM-45) | SCRUM-55 |
 | missing coins | `Missing`, `UpgradeService.MissingCoins`, `economy.missing_coins` | koľko Coins chýba na cenu; text v UI „Missing: {0} Coins“ z tabuľky `UI` | SCRUM-55 |
+| between waves | `WaveState.IsBetweenWaves()` | stavy vlny, v ktorých sa dá nakupovať (upgrade, neskôr unlock): `AwaitingWave` a `Upgrade`; počas vlny, na obrazovke výsledku ani vo `WavePaused` nie | SCRUM-49 |
+| upgrade available | `UpgradeService.IsUpgradeAvailable`, `AvailabilityChanged` | či je upgrade práve dostupný podľa stavu vlny; udalosť `AvailabilityChanged(bool)` pri zmene, aby UI ovládací prvok upgradu skrylo (`false`) alebo ukázalo (`true`) | SCRUM-49 |
+| upgrade block | `UpgradeBlock`, `UpgradeService.UpgradeBlockOf` | prečo sa budova nedá upgradnúť: `None` (dá sa), `BetweenWavesOnly` (prebieha vlna → prvok skryť), `MaxLevel` (ukázať MAX), `NotEnoughCoins` (ukázať chýbajúcu sumu); `CanUpgrade` aj `TryUpgrade` ho používajú | SCRUM-49 |
 
 ## Zjednotené
 - Utilization budovy s Workerom: `utilization_worker` (od SCRUM-96 existuje len jeden config, `tools/config.json` bol zmazaný).
@@ -144,5 +147,5 @@ Pred pridaním nového debug klávesu over, že tu ešte nie je, a zapíš ho se
 | P | `WaveLoopDebugInput` | pauza / pokračovanie vlny | SCRUM-26 |
 | L | `WaveLoopDebugInput` | posunie vlnu do ďalšieho stavu | SCRUM-26 |
 | N | `WorkerManagerDebugInput` | pridá budovu a Workera | SCRUM-38 |
-| U | `UpgradeServiceDebugInput` | upgrade všetkých budov; pri nedostatku vypíše „Missing: … Coins“ | SCRUM-50, SCRUM-55 |
+| U | `UpgradeServiceDebugInput` | upgrade všetkých budov; pri nedostatku vypíše „Missing: … Coins“, počas vlny „only between waves“, na L3 „max level“; pri zmene stavu vlny sám vypíše „Upgrade available/hidden“ | SCRUM-50, SCRUM-55, SCRUM-49 |
 | C | `UpgradeServiceDebugInput` | +300 Coins (náhrada odmeny za vlnu) | SCRUM-55 |

@@ -15,8 +15,16 @@ namespace Multikulti.Economy
         {
             m_Service = GetComponent<UpgradeService>();
             m_Balances = FindAnyObjectByType<ResortBalances>();
+            m_Service.AvailabilityChanged += OnAvailabilityChanged;
+        }
+        void OnDestroy()
+        {
+            if (m_Service != null)
+                m_Service.AvailabilityChanged -= OnAvailabilityChanged;
         }
 
+        void OnAvailabilityChanged(bool available) =>
+            Debug.Log(available ? $"Upgrade available ({m_Service.WaveState})" : $"Upgrade hidden ({m_Service.WaveState})");
         void Update()
         {
             var keyboard = Keyboard.current;
@@ -30,9 +38,12 @@ namespace Multikulti.Economy
             foreach (var building in FindObjectsByType<Building>(FindObjectsSortMode.None))
             {
                 var price = m_Service.PriceOf(building);
-                if (m_Service.TryUpgrade(building))
+                               var block = m_Service.UpgradeBlockOf(building);
+                if (block == UpgradeBlock.None && m_Service.TryUpgrade(building))
                     Debug.Log($"{building.Need}: upgrade to L{building.Level} for {price} Coins, capacity {building.Queue.Capacity}");
-                else if (building.IsMaxLevel)
+                else if (block == UpgradeBlock.BetweenWavesOnly)
+                    Debug.Log($"{building.Need}: no upgrade, only between waves ({m_Service.WaveState})");
+                else if (block == UpgradeBlock.MaxLevel)
                     Debug.Log($"{building.Need}: no upgrade, max level L{building.Level}");
                 else
                     Debug.Log($"{building.Need}: no upgrade to L{building.Level + 1} (price {price}), " + MissingText(m_Service.MissingCoins(building)));
