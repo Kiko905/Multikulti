@@ -98,6 +98,10 @@ MonoBehaviour:
     m_Localized: Bungalows
     m_Metadata:
       m_Items: []
+  - m_Id: 10204864056446976
+    m_Localized: 'Missing: {0} Coins'
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []
