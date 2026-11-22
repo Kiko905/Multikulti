@@ -73,6 +73,8 @@ Kontrolu robí `Assets/Editor/Naming/BannedTermsCheck.cs`: pred každým buildom
 | can move | `CanMove` | či je presun Workera práve dostupný (podľa stavu vlny) | SCRUM-36, SCRUM-37 |
 | move allowed | `IsMoveAllowed` | stavy vlny, v ktorých sa dá Worker presunúť: `AwaitingWave`, `WaveIncoming`, `WaveActive` (príchod aj dobeh); vo `WavePaused` nie | SCRUM-37 |
 | tap | `WorkerTapInput` | ťuknutie na budovu s Workerom presunie Workera na prázdnu budovu | SCRUM-36 |
+| worker layout | `Layout` | rozmiestnenie Workerov: pre každého Workera index budovy, na ktorej stojí | SCRUM-40 |
+| layout kept between waves | `OnWaveStateChanged`, `SameLayout` | rozmiestnenie sa medzi vlnami nemení; pri štarte vlny (`WaveIncoming`) sa porovná s posledným známym rozmiestnením a zaloguje „Wave N starts with Workers on […]“; zmena bez presunu je chyba (`Debug.Assert`) | SCRUM-40 |
 | capacity | `Capacity` | počet miest obsluhy v budove | SCRUM-30 |
 | building queue | `BuildingQueue` | miesta a rad čakajúcich jednotiek v budove | SCRUM-30 |
 | arrived / served | `ArrivedCount` / `ServedCount` | koľko jednotiek do budovy prišlo / koľko bolo obslúžených | SCRUM-35 |
