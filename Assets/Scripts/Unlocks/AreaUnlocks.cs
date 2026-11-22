@@ -63,6 +63,12 @@ namespace Multikulti.Unlocks
 
         public bool IsBought(Need need) => m_Bought.Contains(need);
 
+        /// <summary>
+        /// SCRUM-34: a need is LOCKED while its area unlock is not bought (also while it is Available).
+        /// Needs without an area unlock (Rooms, Drinks, Food) are never locked.
+        /// </summary>
+        public bool IsNeedLocked(Need need) => Contains(need) && !IsBought(need);
+
         public bool SetBought(Need need, bool bought)
         {
             Get(need);

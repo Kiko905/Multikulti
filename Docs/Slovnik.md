@@ -34,7 +34,7 @@ Kontrolu robí `Assets/Editor/Naming/BannedTermsCheck.cs`: pred každým buildom
 | BOTTLENECK | `Bottleneck` | warning | rad je ≥ `bottleneck_threshold` aspoň `bottleneck_hysteresis_s` sekúnd |
 | RECOVERING | `Recovering` | „… is catching up“ | po BOTTLENECK rad klesol pod prah; po `bottleneck_hysteresis_s` pod prahom → OK, nad prahom hneď späť BOTTLENECK |
 | SATISFIED | `Satisfied` | — | prišiel celý demand needu vo vlne a všetky jednotky sú obslúžené; do konca vlny sa nemení |
-| LOCKED | `Locked` | — | budova ešte nie je kúpená |
+| LOCKED | `Locked` | — | budova needu (Pool → Relax, Bungalows → Ocean View) ešte nie je kúpená: need nemá demand, vlna jeho jednotky neposiela a na Wave Needs Paneli sa nezobrazuje; platí aj v stave staveniska Available |
 
 ## Stavy VIP requestu (SCRUM-62)
 | Jira | C# enum `RequestState` | Význam |
@@ -124,7 +124,7 @@ Kontrolu robí `Assets/Editor/Naming/BannedTermsCheck.cs`: pred každým buildom
 | Wave Needs Panel | `WaveNeedsPanel` | panel vedľa ostrova počas vlny (`WaveIncoming`, `WaveActive`, `WavePaused`): pre každý aktívny need obslúžené / celkové jednotky vlny a značka Worker, ak na budove needu stojí Worker | SCRUM-29 |
 | active need | — | need, ktorý má vo vlne demand > 0, alebo doň aj tak prišli jednotky; len taký need má riadok vo Wave Needs Panel | SCRUM-29 |
 | need progress | `NeedProgress`, `WaveNeedsProgress` | obslúžené a celkové jednotky needu od Start Wave; celkové = demand z `wave_config.json`, alebo viac, ak prišlo viac jednotiek (Sudden rush) | SCRUM-29 |
-| need state | `NeedState` | stav needu vo vlne: OK, BOTTLENECK, RECOVERING, SATISFIED (LOCKED pribudne v SCRUM-34) | SCRUM-32 |
+| need state | `NeedState` | stav needu vo vlne: OK, BOTTLENECK, RECOVERING, SATISFIED, LOCKED | SCRUM-32, SCRUM-34 |
 | need state tracker | `NeedStateTracker` | prechody stavov jedného needu s hysteréziou, čisté C# | SCRUM-32 |
 | need state board | `NeedStateBoard` | v scéne posúva stavy všetkých needov; rad needu = súčet backlogov všetkých jeho budov; na Start Wave vráti needy na OK; udalosť `StateChanged` | SCRUM-32 |
 | hysteresis | `bottleneck_hysteresis_s` | koľko sekúnd musí podmienka platiť, kým need prejde OK → BOTTLENECK alebo RECOVERING → OK | SCRUM-32 |

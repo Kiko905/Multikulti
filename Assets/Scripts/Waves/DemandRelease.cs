@@ -45,14 +45,19 @@ namespace Multikulti.Waves
         /// <summary>Release rate of a need in units per second (demand_total ÷ wave_timer).</summary>
         public float Rate(Need need) => WaveTimer > 0f ? m_Demand[(int)need] / WaveTimer : 0f;
 
-        /// <summary>Prepares the release of a new wave. A null wave releases nothing.</summary>
-        public void Begin(WaveDefinition wave, float waveTimer)
+        /// <summary>
+        /// Prepares the release of a new wave. A null wave releases nothing.
+        /// A need for which isLocked returns true (its building is not bought, SCRUM-34) gets demand 0,
+        /// so it generates no units at all.
+        /// </summary>
+        public void Begin(WaveDefinition wave, float waveTimer, Func<Need, bool> isLocked = null)
         {
             if (waveTimer <= 0f) throw new ArgumentOutOfRangeException(nameof(waveTimer));
             WaveTimer = waveTimer;
             for (var i = 0; i < k_Needs.Length; i++)
             {
-                m_Demand[i] = wave != null ? Math.Max(0, DemandOf(wave, k_Needs[i])) : 0;
+                var locked = isLocked != null && isLocked(k_Needs[i]);
+                m_Demand[i] = wave != null && !locked ? Math.Max(0, DemandOf(wave, k_Needs[i])) : 0;
                 m_Released[i] = 0;
             }
         }
