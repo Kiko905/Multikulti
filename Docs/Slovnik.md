@@ -113,7 +113,12 @@ Kontrolu robí `Assets/Editor/Naming/BannedTermsCheck.cs`: pred každým buildom
 | Gems | `Gems` | platená mena | SCRUM-69 |
 | Speed Up | `SpeedUp` | Energy boost obsluhy | SCRUM-57 |
 | Sudden rush | `SuddenRush` | mini-event vo vlne 2 | SCRUM-60 |
-| Area Unlock | `AreaUnlock` | odomknutie Pool/Bungalows | SCRUM-51 |
+| Area Unlock | `AreaUnlock` | odomknutie Pool/Bungalows: oblasť, need, od ktorej vlny je dostupné a cena v Coins (`unlocks` v `wave_config.json`) | SCRUM-51, SCRUM-53 |
+| area unlock state | `AreaUnlockState` | stav staveniska: Locked (ešte nie je po vlne `*_after_wave`), Available (sprístupnené, ale nekúpené), Bought (v scéne už je budova s jeho needom) | SCRUM-53 |
+| area unlocks | `AreaUnlocks` | stavy všetkých odomknutí a počet dokončených vĺn, čisté C#; Area Unlock sa dá otvoriť len v Available a v `AwaitingWave` | SCRUM-53 |
+| area unlock service | `AreaUnlockService`, `Requested`, `TryOpen` | v scéne drží `AreaUnlocks`, kúpené odvodí z budov na `IslandMap`; udalosť `Requested` otvára obrazovku Area Unlock (SCRUM-112), pri odchode z `AwaitingWave` sa zavrie | SCRUM-53 |
+| site tap | `AreaUnlockSiteInput` | ťuknutie na stavenisko alebo na jeho značku „+ …“ v HUD otvorí Area Unlock; ťuknutie na budovu ostáva presunu Workera | SCRUM-53 |
+| Area Unlock debug window | `AreaUnlockDebugWindow` | dočasné okno (len editor a development build): cena, chýbajúce Coins, tlačidlo Zavrieť; pod staveniskom text „available · cena“ alebo „od vlny N“ | SCRUM-53 |
 | VIP | `Vip` | špeciálny hosť s requestami | SCRUM-61 |
 | Guest Request Board | `GuestRequestBoard` | požiadavky VIP hosťa | SCRUM-62 |
 | Wave Needs Panel | `WaveNeedsPanel` | panel vedľa ostrova počas vlny (`WaveIncoming`, `WaveActive`, `WavePaused`): pre každý aktívny need obslúžené / celkové jednotky vlny a značka Worker, ak na budove needu stojí Worker | SCRUM-29 |
