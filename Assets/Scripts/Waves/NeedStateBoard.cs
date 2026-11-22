@@ -19,8 +19,10 @@ namespace Multikulti.Waves
 
         public event Action<Need, NeedState, NeedState> StateChanged;
 
+        /// <summary>State of a need in the current wave; LOCKED while its building is not bought (SCRUM-34).</summary>
         public NeedState StateOf(Need need)
         {
+            if (waveLoop != null && waveLoop.IsNeedLocked(need)) return NeedState.Locked;
             foreach (var tracker in m_Trackers)
             {
                 if (tracker.Need == need) return tracker.State;
@@ -60,6 +62,9 @@ namespace Multikulti.Waves
             var release = waveLoop.Release;
             foreach (var tracker in m_Trackers)
             {
+                // A LOCKED need has no demand and no building, so it has nothing to track (SCRUM-34).
+                if (waveLoop.IsNeedLocked(tracker.Need)) continue;
+
                 var backlog = 0;
                 var pending = 0;
                 foreach (var building in workers.Buildings)

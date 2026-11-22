@@ -5,7 +5,9 @@ namespace Multikulti.Buildings
         Ok,
         Bottleneck,
         Recovering,
-        Satisfied
+        Satisfied,
+        /// <summary>The building of this need is not bought yet: no demand, not on the panel (SCRUM-34).</summary>
+        Locked
     }
 
     public static class NeedStateNames
@@ -16,6 +18,7 @@ namespace Multikulti.Buildings
             NeedState.Bottleneck => "BOTTLENECK",
             NeedState.Recovering => "RECOVERING",
             NeedState.Satisfied => "SATISFIED",
+            NeedState.Locked => "LOCKED",
             _ => state.ToString()
         };
     }

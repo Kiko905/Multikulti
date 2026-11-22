@@ -66,6 +66,9 @@ namespace Multikulti.Unlocks
 
         public AreaUnlockState StateOf(Need need) => Unlocks.StateOf(need, CompletedWaves);
 
+        /// <summary>SCRUM-34: the need's building is not bought yet, so the need brings no demand.</summary>
+        public bool IsNeedLocked(Need need) => Unlocks != null && Unlocks.IsNeedLocked(need);
+
         public bool TryOpen(Need need)
         {
             if (!Unlocks.CanOpen(need, CompletedWaves, WaveState))

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Multikulti.Buildings;
 using Multikulti.Config;
 using Multikulti.Diagnostics;
+using Multikulti.Unlocks;
 using Multikulti.Workers;
 using UnityEngine;
 
@@ -30,11 +31,17 @@ namespace Multikulti.Waves
     ///
     /// While WavePaused the buildings of the WorkerManager stop serving (Building.IsPaused) and WaveTime stops,
     /// so nothing advances and nothing gets worse (build document §4.3).
+    ///
+    /// LOCKED needs (SCRUM-34): a need whose building is not bought yet (Pool → Relax, Bungalows → Ocean View)
+    /// gets demand 0 on Start Wave, so it releases no units. Buying is possible only between waves,
+    /// so a need stays locked or unlocked for the whole wave.
     /// </summary>
     public sealed class WaveLoop : MonoBehaviour
     {
         [SerializeField, Min(0f)] float incomingSeconds = 2f;
         [SerializeField] WorkerManager workers;
+        [SerializeField, Tooltip("Area unlocks (SCRUM-34); found in the scene when empty.")]
+        AreaUnlockService unlocks;
 
         float m_StateTime;
         float m_WaveTime;
@@ -103,8 +110,16 @@ namespace Multikulti.Waves
         /// <summary>Raised once per wave when arrival closes and the drain starts.</summary>
         public event Action ArrivalClosed;
 
+        /// <summary>
+        /// SCRUM-34: the building of this need is not bought yet, so the need is LOCKED:
+        /// no demand and not on the Wave Needs Panel. Without an AreaUnlockService nothing is locked.
+        /// </summary>
+        public bool IsNeedLocked(Need need) => unlocks != null && unlocks.IsNeedLocked(need);
+
         void Awake()
         {
+            if (unlocks == null)
+                unlocks = FindAnyObjectByType<AreaUnlockService>();
             Machine = new WaveStateMachine(WaveConfig.Current.Waves.Count);
             Machine.StateChanged += OnStateChanged;
             ReportState();
@@ -208,7 +223,8 @@ namespace Multikulti.Waves
                 m_ArrivalTime = 0f;
                 m_DrainTime = 0f;
                 m_ArrivalClosed = false;
-                m_Release.Begin(CurrentWave(), WaveTimer);
+                m_Release.Begin(CurrentWave(), WaveTimer, IsNeedLocked);
+                LogLockedNeeds();
                 m_MissingBuildings.Clear();
                 m_Waits.Clear();
                 SetBuildingsClock();
@@ -228,6 +244,19 @@ namespace Multikulti.Waves
             var waves = WaveConfig.Current.Waves;
             var index = Machine.Wave - 1;
             return index >= 0 && index < waves.Count ? waves[index] : null;
+        }
+
+        /// <summary>Logs the needs the wave would bring but which stay LOCKED (SCRUM-34).</summary>
+        void LogLockedNeeds()
+        {
+            var wave = CurrentWave();
+            if (wave == null) return;
+            foreach (Need need in Enum.GetValues(typeof(Need)))
+            {
+                if (IsNeedLocked(need) && DemandRelease.DemandOf(wave, need) > 0)
+                    Debug.Log($"Wave {Machine.Wave}: {need} LOCKED (building not bought), " +
+                              $"its {DemandRelease.DemandOf(wave, need)} units do not come");
+            }
         }
 
         /// <summary>

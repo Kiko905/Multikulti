@@ -120,7 +120,7 @@ namespace Multikulti.UI
                 return;
             }
 
-            m_Progress.Collect(CurrentWave(), Buildings, m_Active);
+            m_Progress.Collect(CurrentWave(), Buildings, m_Active, waveLoop.IsNeedLocked);
 
             // m_Rows and m_Active are both in WaveNeedsProgress.Needs order.
             var next = 0;
