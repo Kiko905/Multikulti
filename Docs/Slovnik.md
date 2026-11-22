@@ -121,6 +121,9 @@ Kontrolu robí `Assets/Editor/Naming/BannedTermsCheck.cs`: pred každým buildom
 | need state tracker | `NeedStateTracker` | prechody stavov jedného needu s hysteréziou, čisté C# | SCRUM-32 |
 | need state board | `NeedStateBoard` | v scéne posúva stavy všetkých needov; rad needu = súčet backlogov všetkých jeho budov; na Start Wave vráti needy na OK; udalosť `StateChanged` | SCRUM-32 |
 | hysteresis | `bottleneck_hysteresis_s` | koľko sekúnd musí podmienka platiť, kým need prejde OK → BOTTLENECK alebo RECOVERING → OK | SCRUM-32 |
+| level | `Level`, `MaxLevel`, `IsMaxLevel` | level budovy 1–3; určuje capacity podľa `capacity_by_level` (3 → 5 → 7) | SCRUM-50 |
+| level up | `LevelUp` | zvýši level budovy o 1 a hneď zväčší capacity; čakajúce jednotky sa posadia na nové miesta | SCRUM-50 |
+| upgrade service | `UpgradeService`, `PriceOf`, `CanUpgrade`, `TryUpgrade` | nákup upgradu za Coins: cena z `upgrade_prices`, odpočíta Coins a zavolá `LevelUp`; udalosť `Upgraded`; budova sama o peniazoch nevie | SCRUM-50 |
 
 ## Zjednotené
 - Utilization budovy s Workerom: `utilization_worker` (od SCRUM-96 existuje len jeden config, `tools/config.json` bol zmazaný).

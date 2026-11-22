@@ -1156,6 +1156,8 @@ GameObject:
   - component: {fileID: 2400000004}
   - component: {fileID: 2400000005}
   - component: {fileID: 2400000006}
+  - component: {fileID: 2400000007}
+  - component: {fileID: 2400000008}
   m_Layer: 0
   m_Name: Home
   m_TagString: Untagged
@@ -1260,6 +1262,31 @@ MonoBehaviour:
   fontSize: 30
   margin: 32
   barHeight: 72
+--- !u!114 &2400000007
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2400000001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: afba002d3aa94864db1b393a37b812da, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Multikulti.Economy.UpgradeService
+  balances: {fileID: 2400000003}
+--- !u!114 &2400000008
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2400000001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 45d93d4fdd67e2f42aab6faf9216dbd8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Multikulti.Economy.UpgradeServiceDebugInput
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
