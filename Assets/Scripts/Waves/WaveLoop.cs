@@ -29,8 +29,10 @@ namespace Multikulti.Waves
     /// into Waits; the service time is not counted. Waits is cleared on Start Wave and summarised in the log
     /// when the wave resolves.
     ///
-    /// Wave Satisfaction (SCRUM-43): when the last unit is served, Waits is turned into one Wave Satisfaction
-    /// (WaveSatisfaction.Calculate) before WaveResolving; it stays in Satisfaction until the next Start Wave.
+    /// Wave rating (SCRUM-43, SCRUM-44; state diagram "Vlna dokončená", entry / VypocitatRating): when the last unit
+    /// is served the wave enters WaveResolving and VypocitatRating turns Waits into Wave Satisfaction
+    /// (VypocitatSpokojnostHosti) and the rating 1★–5★ / Perfect; the result is the object Hodnotenie
+    /// (HodnotenieVlny, activity diagram) and stays there until the next Start Wave.
     ///
     /// While WavePaused the buildings of the WorkerManager stop serving (Building.IsPaused) and WaveTime stops,
     /// so nothing advances and nothing gets worse (build document §4.3).
@@ -114,10 +116,19 @@ namespace Multikulti.Waves
         public WaveWaitLog Waits => m_Waits;
 
         /// <summary>
-        /// Wave Satisfaction of the last finished wave (SCRUM-43); calculated when the wave enters WaveResolving.
+        /// Wave Satisfaction of the last finished wave (SCRUM-43); calculated in entry / VypocitatRating (WaveResolving).
         /// Null before the first wave finishes and again from Start Wave until the wave is resolved.
         /// </summary>
         public WaveSatisfactionResult? Satisfaction { get; private set; }
+
+        /// <summary>
+        /// Result of the last finished wave: "hodnotenie : HodnotenieVlny" of the activity diagram (SCRUM-44).
+        /// Created in entry / VypocitatRating; null from Start Wave until the wave is rated.
+        /// </summary>
+        public HodnotenieVlny Hodnotenie { get; private set; }
+
+        /// <summary>Raised right after the wave is rated, for "Zobraziť hodnotenie vlny" (Wave Complete screen).</summary>
+        public event Action<HodnotenieVlny> WaveRated;
 
         /// <summary>Seconds from the end of arrival until every building served all units (drain_s in playtest metrics).</summary>
         public float DrainSeconds => m_DrainTime;
@@ -200,7 +211,6 @@ namespace Multikulti.Waves
             {
                 Debug.Log($"Wave {Machine.Wave}: all units served, drain {m_DrainTime:0.0} s");
                 LogWaits();
-                CalculateSatisfaction();
                 Machine.Resolve();
             }
         }
@@ -296,6 +306,7 @@ namespace Multikulti.Waves
                 m_MissingBuildings.Clear();
                 m_Waits.Clear();
                 Satisfaction = null;
+                Hodnotenie = null;
                 SetBuildingsClock();
                 ObserveBuildings();
                 PlaytestMetrics.WaveStarted(Machine.Wave);
@@ -303,6 +314,10 @@ namespace Multikulti.Waves
 
             if (next == WaveState.WavePaused || previous == WaveState.WavePaused)
                 SetBuildingsPaused(next == WaveState.WavePaused);
+
+            // State diagram "Vlna dokončená": entry / VypocitatRating (SCRUM-44).
+            if (next == WaveState.WaveResolving)
+                VypocitatRating();
 
             ReportState();
             Debug.Log($"Wave {Machine.Wave}: {previous.ToJiraName()} → {next.ToJiraName()}");
@@ -403,8 +418,25 @@ namespace Multikulti.Waves
                 m_Waits.Record(unit);
         }
 
-        /// <summary>SCRUM-43: turns the waits of the wave into Wave Satisfaction and logs it with the per-need breakdown.</summary>
-        void CalculateSatisfaction()
+        /// <summary>
+        /// entry / VypocitatRating of "Vlna dokončená" (SCRUM-44, activity "Vypočítať rating"): calculates the
+        /// satisfaction of the guests, turns it into 1★–5★ / Perfect by rating_thresholds and keeps the result
+        /// as Hodnotenie (HodnotenieVlny).
+        /// </summary>
+        void VypocitatRating()
+        {
+            var satisfaction = VypocitatSpokojnostHosti();
+            var rating = HodnotenieVlny.RatingFor(satisfaction.Value, WaveConfig.Current.Satisfaction.RatingThresholds);
+            Hodnotenie = new HodnotenieVlny(Machine.Wave, satisfaction, rating);
+            Debug.Log($"Wave {Machine.Wave}: rating {Hodnotenie.RatingLabel} (Wave Satisfaction {satisfaction.Value:P0})");
+            WaveRated?.Invoke(Hodnotenie);
+        }
+
+        /// <summary>
+        /// Use case "Vypočítať spokojnosť hostí" (SCRUM-43, included by "Zobraziť hodnotenie vlny"): turns the waits
+        /// of the wave into Wave Satisfaction and logs it with the per-need breakdown.
+        /// </summary>
+        WaveSatisfactionResult VypocitatSpokojnostHosti()
         {
             var result = WaveSatisfaction.Calculate(m_Waits.All, WaveConfig.Current.Satisfaction);
             Satisfaction = result;
@@ -419,6 +451,7 @@ namespace Multikulti.Waves
             var floor = result.IsOnWaveFloor ? $" (raw {result.RawValue:P0}, lifted to wave_floor)" : "";
             Debug.Log($"Wave {Machine.Wave}: Wave Satisfaction {result.Value:P0}{floor}, " +
                       $"{result.Units} units — {breakdown}");
+            return result;
         }
 
         void LogWaits()
