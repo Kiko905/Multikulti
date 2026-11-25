@@ -13,7 +13,8 @@ namespace Multikulti.Island
     /// A construction site belongs to a need (Pool → Relax, Bungalows → Ocean View) and is shown while
     /// no Building with that need is in the scene. The site must look like a prepared place, not like
     /// an unfinished map (build document §3, US1). Buying the unlock and the tap on a site are SCRUM-51 to SCRUM-53;
-    /// whoever adds the building calls Refresh, and the site disappears.
+    /// whoever adds the building calls Refresh, and the site disappears. AreaUnlockService marks an available
+    /// site with SetSiteAvailable (flag, lighter platform; SCRUM-102).
     ///
     /// Graybox: like ShipArrival, the map builds simple shapes from primitives. Positions are world x and z;
     /// their y is ignored, heights come from groundHeight and seaLevel. The buildings stand on groundHeight
@@ -49,9 +50,12 @@ namespace Multikulti.Island
         static readonly Color k_GrassColor = new Color(0.47f, 0.68f, 0.34f);
         static readonly Color k_WoodColor = new Color(0.55f, 0.38f, 0.22f);
         static readonly Color k_SiteColor = new Color(0.82f, 0.68f, 0.46f);
+        static readonly Color k_AvailableSiteColor = new Color(0.95f, 0.82f, 0.55f);
+        static readonly Color k_FlagColor = new Color(1f, 0.78f, 0.2f);
 
         const int OutlineSamples = 24;
         const float PostHeight = 0.6f;
+        const float FlagPoleHeight = 1.3f;
         const float MarkerLift = 0.35f;
 
         [SerializeField] WaveLoop waveLoop;
@@ -77,6 +81,9 @@ namespace Multikulti.Island
         readonly List<Vector3> m_FramingPoints = new List<Vector3>();
         readonly List<Material> m_Materials = new List<Material>();
         GameObject[] m_SiteObjects = Array.Empty<GameObject>();
+        GameObject[] m_SiteFlags = Array.Empty<GameObject>();
+        Material[] m_SitePlatforms = Array.Empty<Material>();
+        readonly HashSet<Need> m_AvailableSites = new HashSet<Need>();
 
         /// <summary>Raised after Refresh: buildings, construction sites or framing points may have changed.</summary>
         public event Action Refreshed;
@@ -152,6 +159,26 @@ namespace Multikulti.Island
                 return building.transform.position + Vector3.up * (0.5f + MarkerLift);
             var bounds = renderer.bounds;
             return new Vector3(bounds.center.x, bounds.max.y + MarkerLift, bounds.center.z);
+        }
+
+        /// <summary>True if the site of the need is marked as available (SCRUM-102).</summary>
+        public bool IsSiteAvailable(Need need) => m_AvailableSites.Contains(need);
+
+        /// <summary>
+        /// SCRUM-102: an available site (unlock offered, not bought yet) gets a flag and a lighter platform, so the
+        /// player sees from afar that the site can be bought now. A locked site stays a plain prepared platform.
+        /// </summary>
+        public void SetSiteAvailable(Need need, bool available)
+        {
+            if (available) m_AvailableSites.Add(need);
+            else m_AvailableSites.Remove(need);
+
+            for (var i = 0; i < constructionSites.Length; i++)
+            {
+                if (constructionSites[i].need != need) continue;
+                m_SiteFlags[i].SetActive(available);
+                m_SitePlatforms[i].color = available ? k_AvailableSiteColor : k_SiteColor;
+            }
         }
 
         public bool TryGetSite(Need need, out Vector3 position)
@@ -242,12 +269,15 @@ namespace Multikulti.Island
             }
 
             m_SiteObjects = new GameObject[constructionSites.Length];
+            m_SiteFlags = new GameObject[constructionSites.Length];
+            m_SitePlatforms = new Material[constructionSites.Length];
             for (var i = 0; i < constructionSites.Length; i++)
-                m_SiteObjects[i] = BuildSite(constructionSites[i], root);
+                m_SiteObjects[i] = BuildSite(constructionSites[i], root, out m_SiteFlags[i], out m_SitePlatforms[i]);
         }
 
         // A levelled wooden platform with corner posts: a prepared place, not a hole in the map.
-        GameObject BuildSite(ConstructionSite site, Transform parent)
+        // The flag on the back left post shows only while the site is available (SCRUM-102).
+        GameObject BuildSite(ConstructionSite site, Transform parent, out GameObject flag, out Material platformMaterial)
         {
             var root = new GameObject($"Construction Site ({site.need})").transform;
             root.SetParent(parent, false);
@@ -256,6 +286,19 @@ namespace Multikulti.Island
             var platform = CreatePart(PrimitiveType.Cube, "Platform", root, k_SiteColor);
             platform.localPosition = new Vector3(0f, 0.04f, 0f);
             platform.localScale = new Vector3(site.size.x, 0.08f, site.size.y);
+            platformMaterial = platform.GetComponent<Renderer>().sharedMaterial;
+
+            var flagRoot = new GameObject("Available Flag").transform;
+            flagRoot.SetParent(root, false);
+            flagRoot.localPosition = new Vector3(-site.size.x * 0.5f + 0.1f, 0f, site.size.y * 0.5f - 0.1f);
+            var pole = CreatePart(PrimitiveType.Cube, "Pole", flagRoot, k_WoodColor);
+            pole.localPosition = new Vector3(0f, FlagPoleHeight * 0.5f, 0f);
+            pole.localScale = new Vector3(0.07f, FlagPoleHeight, 0.07f);
+            var cloth = CreatePart(PrimitiveType.Cube, "Cloth", flagRoot, k_FlagColor);
+            cloth.localPosition = new Vector3(0.3f, FlagPoleHeight - 0.2f, 0f);
+            cloth.localScale = new Vector3(0.55f, 0.36f, 0.03f);
+            flag = flagRoot.gameObject;
+            flag.SetActive(false);
 
             var half = new Vector3(site.size.x * 0.5f - 0.1f, 0f, site.size.y * 0.5f - 0.1f);
             for (var corner = 0; corner < 4; corner++)

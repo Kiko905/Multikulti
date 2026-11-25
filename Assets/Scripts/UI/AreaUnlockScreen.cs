@@ -261,8 +261,8 @@ namespace Multikulti.UI
             m_LaterText.text = Text(LaterKey);
         }
 
-        // Each area has its own accent and icon; the layout stays the same (AC7b).
-        static Color AccentOf(Need need) => need == Need.OceanView
+        // Each area has its own accent and icon; the layout stays the same (AC7b). The site marker uses the same accent.
+        internal static Color AccentOf(Need need) => need == Need.OceanView
             ? new Color(1f, 0.55f, 0.35f)
             : new Color(0.3f, 0.8f, 0.95f);
 

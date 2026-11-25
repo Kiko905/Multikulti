@@ -30,10 +30,14 @@ namespace Multikulti.Unlocks
             var scale = Screen.height / ReferenceHeight;
             GUI.matrix = Matrix4x4.Scale(new Vector3(scale, scale, 1f));
 
-            DrawSiteLabels(scale);
-            // The purchase window itself is S9 Area Unlock (AreaUnlockScreen, SCRUM-112); this one only without it.
-            if (m_Service.Open.HasValue && !m_HasScreen)
-                DrawWindow(m_Service.Open.Value, scale);
+            // With S9 (SCRUM-112) the HUD site markers show the state (SCRUM-102) and S9 is the purchase window;
+            // this debug window only stands in without it.
+            if (!m_HasScreen)
+            {
+                DrawSiteLabels(scale);
+                if (m_Service.Open.HasValue)
+                    DrawWindow(m_Service.Open.Value, scale);
+            }
 
             GUI.matrix = Matrix4x4.identity;
         }

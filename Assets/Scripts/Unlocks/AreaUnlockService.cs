@@ -65,7 +65,17 @@ namespace Multikulti.Unlocks
                 waveLoop.Machine.StateChanged += OnStateChanged;
             if (map != null)
                 map.Refreshed += SyncBought;
+            Changed += MarkSites;
             SyncBought();
+            MarkSites();
+        }
+
+        // SCRUM-102: the map shows which sites can be bought now.
+        void MarkSites()
+        {
+            if (map == null) return;
+            foreach (var unlock in Unlocks.All)
+                map.SetSiteAvailable(unlock.Need, StateOf(unlock.Need) == AreaUnlockState.Available);
         }
 
         void OnDestroy()
@@ -74,6 +84,7 @@ namespace Multikulti.Unlocks
                 waveLoop.Machine.StateChanged -= OnStateChanged;
             if (map != null)
                 map.Refreshed -= SyncBought;
+            Changed -= MarkSites;
         }
 
         public AreaUnlockState StateOf(Need need) => Unlocks.StateOf(need, CompletedWaves);
