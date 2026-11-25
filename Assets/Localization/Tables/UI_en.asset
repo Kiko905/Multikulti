@@ -178,6 +178,14 @@ MonoBehaviour:
     m_Localized: Bungalows right on the water, with a view.
     m_Metadata:
       m_Items: []
+  - m_Id: 5237297274884134
+    m_Localized: "+ {0} · {1} Coins"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884135
+    m_Localized: "{0} · after Wave {1}"
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []
