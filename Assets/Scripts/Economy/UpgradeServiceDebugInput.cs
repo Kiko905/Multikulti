@@ -38,12 +38,12 @@ namespace Multikulti.Economy
             foreach (var building in FindObjectsByType<Building>(FindObjectsSortMode.None))
             {
                 var price = m_Service.PriceOf(building);
-                               var block = m_Service.UpgradeBlockOf(building);
-                if (block == UpgradeBlock.None && m_Service.TryUpgrade(building))
+                var block = m_Service.UpgradeBlockOf(building);
+                if (block == PurchaseBlock.None && m_Service.TryUpgrade(building))
                     Debug.Log($"{building.Need}: upgrade to L{building.Level} for {price} Coins, capacity {building.Queue.Capacity}");
-                else if (block == UpgradeBlock.BetweenWavesOnly)
+                else if (block == PurchaseBlock.BetweenWavesOnly)
                     Debug.Log($"{building.Need}: no upgrade, only between waves ({m_Service.WaveState})");
-                else if (block == UpgradeBlock.MaxLevel)
+                else if (block == PurchaseBlock.MaxLevel)
                     Debug.Log($"{building.Need}: no upgrade, max level L{building.Level}");
                 else
                     Debug.Log($"{building.Need}: no upgrade to L{building.Level + 1} (price {price}), " + MissingText(m_Service.MissingCoins(building)));

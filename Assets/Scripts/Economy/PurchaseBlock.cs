@@ -1,9 +1,11 @@
 namespace Multikulti.Economy
 {
-    public enum UpgradeBlock
+    public enum PurchaseBlock
     {
         None,
         BetweenWavesOnly,
+        NotAvailableYet,
+        AlreadyOwned,
         MaxLevel,
         NotEnoughCoins
     }

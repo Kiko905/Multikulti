@@ -62,17 +62,35 @@ namespace Multikulti.Unlocks
             GUI.Box(area, $"Area Unlock: {unlock.Area}");
 
             var coins = balances != null ? balances.Coins : 0;
-            var missing = Mathf.Max(0, unlock.Price - coins);
+            var missing = m_Service.MissingCoins(unlock.Need);
+            var block = m_Service.BlockOf(unlock.Need);
             var line = new Rect(area.x + 16f, area.y + 32f, width - 32f, 22f);
             GUI.Label(line, $"Cena: {unlock.Price} Coins");
             line.y += 24f;
             GUI.Label(line, missing > 0 ? $"Chýba: {missing} Coins" : $"Máš: {coins} Coins");
             line.y += 24f;
-            GUI.Label(line, "Kúpa príde v SCRUM-51");
+            GUI.Label(line, BlockText(block, unlock));
 
-            if (GUI.Button(new Rect(area.x + (width - 120f) * 0.5f, area.yMax - 40f, 120f, 28f), "Zavrieť"))
+            var buttonY = area.yMax - 40f;
+            var wasEnabled = GUI.enabled;
+            GUI.enabled = block == PurchaseBlock.None;
+            if (GUI.Button(new Rect(area.x + width * 0.5f - 128f, buttonY, 120f, 28f), "Kúpiť"))
+                m_Service.TryBuy(unlock.Need);
+            GUI.enabled = wasEnabled;
+
+            if (GUI.Button(new Rect(area.x + width * 0.5f + 8f, buttonY, 120f, 28f), "Zavrieť"))
                 m_Service.Close();
         }
+
+        static string BlockText(PurchaseBlock block, AreaUnlock unlock) => block switch
+        {
+            PurchaseBlock.None => "Dá sa kúpiť",
+            PurchaseBlock.NotEnoughCoins => "Nedostatok Coins",
+            PurchaseBlock.BetweenWavesOnly => "Kúpiť sa dá len medzi vlnami",
+            PurchaseBlock.NotAvailableYet => $"Dostupné od vlny {unlock.AfterWave}",
+            PurchaseBlock.AlreadyOwned => "Už kúpené",
+            _ => block.ToString()
+        };
 #endif
     }
 }
