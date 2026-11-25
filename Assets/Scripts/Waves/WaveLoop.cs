@@ -15,7 +15,7 @@ namespace Multikulti.Waves
     ///
     /// Graybox behaviour until the related stories are done:
     /// WaveIncoming moves on to WaveActive after incomingSeconds, while ShipArrival sails the ship in (SCRUM-23),
-    /// and WaveResolving moves on to WaveComplete in the next frame (the result comes with SCRUM-43).
+    /// and WaveResolving moves on to WaveComplete in the next frame.
     ///
     /// Arrival and drain (SCRUM-25): wave_timer seconds after WaveActive starts, arrival closes and no new
     /// guests come; the wave keeps running until every building has served all its units (Queue.IsAllServed),
@@ -29,8 +29,16 @@ namespace Multikulti.Waves
     /// into Waits; the service time is not counted. Waits is cleared on Start Wave and summarised in the log
     /// when the wave resolves.
     ///
+    /// Wave Satisfaction (SCRUM-43): when the last unit is served, Waits is turned into one Wave Satisfaction
+    /// (WaveSatisfaction.Calculate) before WaveResolving; it stays in Satisfaction until the next Start Wave.
+    ///
     /// While WavePaused the buildings of the WorkerManager stop serving (Building.IsPaused) and WaveTime stops,
     /// so nothing advances and nothing gets worse (build document §4.3).
+    ///
+    /// Sudden rush (SCRUM-60): once, in wave sudden_rush.wave at sudden_rush.time_s of the arrival phase, extra_units
+    /// of the need of the building that has no Worker arrive over duration_s on top of demand_total. The wave is not
+    /// paused; SuddenRushPrompt offers Move Worker here / Ignore. The rush is plain extra demand: it is served and
+    /// rated by waiting like every other unit and counts into the units of the wave.
     ///
     /// Pause and save (SCRUM-27, state diagram "Pozastavená"): entering WavePaused runs entry / UlozitStavVlny —
     /// the buildings stop and the whole wave is written to WaveSaveState; leaving it runs exit / ObnovitCasovac —
@@ -57,6 +65,7 @@ namespace Multikulti.Waves
         bool m_ContinueSavedWave;
         readonly Dictionary<BuildingQueue, (int Arrived, int Served)> m_CountsAtWaveStart =
             new Dictionary<BuildingQueue, (int Arrived, int Served)>();
+        bool m_RushDone;
         readonly HashSet<Need> m_MissingBuildings = new HashSet<Need>();
         readonly DemandRelease m_Release = new DemandRelease();
         readonly WaveWaitLog m_Waits = new WaveWaitLog();
@@ -113,11 +122,26 @@ namespace Multikulti.Waves
         /// <summary>Waiting of every unit seated in the current wave (SCRUM-42).</summary>
         public WaveWaitLog Waits => m_Waits;
 
+        /// <summary>
+        /// Wave Satisfaction of the last finished wave (SCRUM-43); calculated when the wave enters WaveResolving.
+        /// Null before the first wave finishes and again from Start Wave until the wave is resolved.
+        /// </summary>
+        public WaveSatisfactionResult? Satisfaction { get; private set; }
+
         /// <summary>Seconds from the end of arrival until every building served all units (drain_s in playtest metrics).</summary>
         public float DrainSeconds => m_DrainTime;
 
         /// <summary>Raised once per wave when arrival closes and the drain starts.</summary>
         public event Action ArrivalClosed;
+
+        /// <summary>Raised when a Sudden rush starts (SCRUM-60), with the building it hits.</summary>
+        public event Action<Building> SuddenRushStarted;
+
+        /// <summary>Building hit by the Sudden rush of the current wave (SCRUM-60); null when there is none.</summary>
+        public Building SuddenRushBuilding { get; private set; }
+
+        /// <summary>Buildings and Workers of the scene.</summary>
+        public WorkerManager Workers => workers;
 
         /// <summary>
         /// SCRUM-34: the building of this need is not bought yet, so the need is LOCKED:
@@ -183,6 +207,7 @@ namespace Multikulti.Waves
             if (!m_ArrivalClosed)
             {
                 m_ArrivalTime += deltaTime;
+                TryStartSuddenRush();
                 m_Release.Advance(m_ArrivalTime, SendUnit);
                 if (m_ArrivalTime >= WaveTimer) CloseArrival();
                 return;
@@ -193,6 +218,7 @@ namespace Multikulti.Waves
             {
                 Debug.Log($"Wave {Machine.Wave}: all units served, drain {m_DrainTime:0.0} s");
                 LogWaits();
+                CalculateSatisfaction();
                 Machine.Resolve();
             }
         }
@@ -208,6 +234,46 @@ namespace Multikulti.Waves
             m_Release.ReleaseRemaining(SendUnit);
             Debug.Log($"Wave {Machine.Wave}: arrival closed after {m_ArrivalTime:0.0} s, drain starts");
             ArrivalClosed?.Invoke();
+        }
+
+        /// <summary>
+        /// SCRUM-60: starts the Sudden rush once its time in the arrival phase has come. It hits the building
+        /// without a Worker (in the prototype there is always exactly one), so moving a Worker there always helps.
+        /// </summary>
+        void TryStartSuddenRush()
+        {
+            if (m_RushDone) return;
+            var rush = WaveConfig.Current.SuddenRush;
+            if (rush.Wave != Machine.Wave || rush.ExtraUnits <= 0 || m_ArrivalTime < rush.TimeSeconds) return;
+            m_RushDone = true;
+
+            var target = BuildingWithoutWorker();
+            if (target == null)
+            {
+                Debug.LogWarning($"Wave {Machine.Wave}: Sudden rush skipped, every building of the wave has a Worker.");
+                return;
+            }
+
+            m_Release.AddRush(target.Need, rush.ExtraUnits, rush.TimeSeconds, rush.DurationSeconds);
+            SuddenRushBuilding = target;
+            Debug.Log($"Wave {Machine.Wave}: Sudden rush at {target.name}! +{rush.ExtraUnits} {target.Need} " +
+                      $"over {rush.DurationSeconds:0} s (now {m_Release.Demand(target.Need)} in the wave)");
+            SuddenRushStarted?.Invoke(target);
+        }
+
+        /// <summary>The building of an unlocked need that has no Worker; prefers one whose need is in the wave.</summary>
+        Building BuildingWithoutWorker()
+        {
+            if (workers == null) return null;
+            Building fallback = null;
+            foreach (var building in workers.Buildings)
+            {
+                if (building == null || building.Queue == null || building.HasWorker || IsNeedLocked(building.Need))
+                    continue;
+                if (m_Release.Demand(building.Need) > 0) return building;
+                fallback ??= building;
+            }
+            return fallback;
         }
 
         /// <summary>True when no building has a unit seated or waiting (backlog 0 for every need).</summary>
@@ -241,10 +307,13 @@ namespace Multikulti.Waves
                 m_ArrivalTime = 0f;
                 m_DrainTime = 0f;
                 m_ArrivalClosed = false;
+                m_RushDone = false;
+                SuddenRushBuilding = null;
                 m_Release.Begin(CurrentWave(), WaveTimer, IsNeedLocked);
                 LogLockedNeeds();
                 m_MissingBuildings.Clear();
                 m_Waits.Clear();
+                Satisfaction = null;
                 SetBuildingsClock();
                 ObserveBuildings();
                 RememberCountsAtWaveStart();
@@ -260,6 +329,24 @@ namespace Multikulti.Waves
 
             ReportState();
             Debug.Log($"Wave {Machine.Wave}: {previous.ToJiraName()} → {next.ToJiraName()}");
+
+            if (next == WaveState.WaveComplete)
+                LogNextWave();
+        }
+
+        /// <summary>
+        /// SCRUM-28: after a finished wave tells which scripted wave comes next and how large it is,
+        /// or that all scripted waves are done.
+        /// </summary>
+        void LogNextWave()
+        {
+            var waves = WaveConfig.Current.Waves;
+            var nextIndex = Machine.Wave; // Wave is 1-based, so the next wave's index equals the current number.
+            if (nextIndex < waves.Count)
+                Debug.Log($"Wave {Machine.Wave}/{Machine.WaveCount} complete, next wave {nextIndex + 1} " +
+                          $"has {waves[nextIndex].TotalUnits} units");
+            else
+                Debug.Log($"Wave {Machine.Wave}/{Machine.WaveCount} complete, all scripted waves finished");
         }
 
         WaveDefinition CurrentWave()
@@ -337,6 +424,24 @@ namespace Multikulti.Waves
         {
             if (Machine.State.IsInWave())
                 m_Waits.Record(unit);
+        }
+
+        /// <summary>SCRUM-43: turns the waits of the wave into Wave Satisfaction and logs it with the per-need breakdown.</summary>
+        void CalculateSatisfaction()
+        {
+            var result = WaveSatisfaction.Calculate(m_Waits.All, WaveConfig.Current.Satisfaction);
+            Satisfaction = result;
+
+            var breakdown = new System.Text.StringBuilder();
+            foreach (Need need in Enum.GetValues(typeof(Need)))
+            {
+                if (result.UnitsOf(need) == 0) continue;
+                if (breakdown.Length > 0) breakdown.Append(", ");
+                breakdown.Append($"{need} {result.Of(need):P0}");
+            }
+            var floor = result.IsOnWaveFloor ? $" (raw {result.RawValue:P0}, lifted to wave_floor)" : "";
+            Debug.Log($"Wave {Machine.Wave}: Wave Satisfaction {result.Value:P0}{floor}, " +
+                      $"{result.Units} units — {breakdown}");
         }
 
         void LogWaits()
