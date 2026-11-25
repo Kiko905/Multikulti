@@ -57,6 +57,20 @@ namespace Multikulti.Workers
             return true;
         }
 
+        /// <summary>Puts the Workers back on the saved buildings (SCRUM-27); false when the layout does not fit.</summary>
+        public bool RestoreLayout(int[] buildingOfWorker)
+        {
+            if (buildingOfWorker == null || buildingOfWorker.Length != WorkerCount) return false;
+            var seen = new HashSet<int>();
+            foreach (var b in buildingOfWorker)
+                if (b < 0 || b >= BuildingCount || !seen.Add(b)) return false;
+
+            for (var w = 0; w < WorkerCount; w++)
+                m_BuildingOfWorker[w] = buildingOfWorker[w];
+            AssertValid();
+            return true;
+        }
+
         public int ChooseTarget(int fromBuilding)
         {
             var target = -1;

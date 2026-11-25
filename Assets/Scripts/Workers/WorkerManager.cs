@@ -70,6 +70,18 @@ namespace Multikulti.Workers
             return Roster.Move(worker, target);
         }
 
+        /// <summary>Building index of every Worker, for the wave save (SCRUM-27).</summary>
+        public int[] CaptureLayout() => Layout();
+
+        /// <summary>Puts the Workers back on the saved buildings (SCRUM-27); false when the layout does not fit the scene.</summary>
+        public bool RestoreLayout(int[] layout)
+        {
+            if (!Roster.RestoreLayout(layout)) return false;
+            m_Layout = Layout();
+            Refresh();
+            return true;
+        }
+
         void OnWorkerMoved(int worker, int from, int to)
         {
             m_Layout = Layout();

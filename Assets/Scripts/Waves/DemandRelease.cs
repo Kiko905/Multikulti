@@ -76,6 +76,34 @@ namespace Multikulti.Waves
             }
         }
 
+        /// <summary>Copies the release of the current wave for the wave save (SCRUM-27).</summary>
+        public DemandReleaseState Capture() => new DemandReleaseState
+        {
+            wave_timer = WaveTimer,
+            demand = (int[])m_Demand.Clone(),
+            released = (int[])m_Released.Clone(),
+            extra = (int[])m_Extra.Clone(),
+            extra_released = (int[])m_ExtraReleased.Clone(),
+            extra_start = (float[])m_ExtraStart.Clone(),
+            extra_duration = (float[])m_ExtraDuration.Clone()
+        };
+
+        /// <summary>Continues the release exactly where Capture left it (SCRUM-27).</summary>
+        public void Restore(DemandReleaseState state)
+        {
+            if (state == null) throw new ArgumentNullException(nameof(state));
+            WaveTimer = state.wave_timer;
+            for (var i = 0; i < k_Needs.Length; i++)
+            {
+                m_Demand[i] = state.demand != null && i < state.demand.Length ? state.demand[i] : 0;
+                m_Released[i] = state.released != null && i < state.released.Length ? state.released[i] : 0;
+                m_Extra[i] = state.extra != null && i < state.extra.Length ? state.extra[i] : 0;
+                m_ExtraReleased[i] = state.extra_released != null && i < state.extra_released.Length ? state.extra_released[i] : 0;
+                m_ExtraStart[i] = state.extra_start != null && i < state.extra_start.Length ? state.extra_start[i] : 0f;
+                m_ExtraDuration[i] = state.extra_duration != null && i < state.extra_duration.Length ? state.extra_duration[i] : 0f;
+            }
+        }
+
         /// <summary>
         /// Sudden rush (SCRUM-60): adds units of one need to the current wave. They arrive evenly from
         /// startTime (arrival time in seconds) over duration seconds; the first one comes at startTime.
@@ -143,5 +171,19 @@ namespace Multikulti.Waves
             Need.OceanView => wave.OceanView,
             _ => 0
         };
+    }
+
+    /// <summary>Saved release of a wave (SCRUM-27), one value per Need.</summary>
+    [Serializable]
+    public sealed class DemandReleaseState
+    {
+        public float wave_timer;
+        public int[] demand = Array.Empty<int>();
+        public int[] released = Array.Empty<int>();
+        /// <summary>Sudden rush units per need (SCRUM-60), so a rush in progress continues after a restore.</summary>
+        public int[] extra = Array.Empty<int>();
+        public int[] extra_released = Array.Empty<int>();
+        public float[] extra_start = Array.Empty<float>();
+        public float[] extra_duration = Array.Empty<float>();
     }
 }
