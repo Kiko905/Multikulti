@@ -4,6 +4,7 @@ using Multikulti.Config;
 using Multikulti.Economy;
 using Multikulti.Island;
 using Multikulti.Waves;
+using Multikulti.Workers;
 using UnityEngine;
 
 namespace Multikulti.Unlocks
@@ -13,6 +14,8 @@ namespace Multikulti.Unlocks
         [SerializeField] WaveLoop waveLoop;
         [SerializeField] IslandMap map;
         [SerializeField] ResortBalances balances;
+        [SerializeField] WorkerManager workers;
+        [SerializeField] Building buildingTemplate;
 
         AreaUnlock? m_Open;
         PurchaseRules m_Rules;
@@ -44,6 +47,8 @@ namespace Multikulti.Unlocks
                 map = FindAnyObjectByType<IslandMap>();
             if (balances == null)
                 balances = FindAnyObjectByType<ResortBalances>();
+            if (workers == null)
+                workers = FindAnyObjectByType<WorkerManager>();
             m_Rules = new PurchaseRules(() => balances.CoinWallet, () => WaveState);
 
             var config = WaveConfig.Current.Unlocks;
@@ -113,10 +118,31 @@ namespace Multikulti.Unlocks
                 return false;
 
             Debug.Log($"Area Unlock {unlock.Area} kúpený za {unlock.Price} Coins ({need} sa odomkne od ďalšej vlny)");
-            Bought?.Invoke(unlock);
             Close();
+            Build(unlock);
+            Bought?.Invoke(unlock);
             Changed?.Invoke();
             return true;
+        }
+
+        void Build(AreaUnlock unlock)
+        {
+            if (HasBuilding(unlock.Need)) return;
+
+            var template = buildingTemplate != null ? buildingTemplate
+                : workers != null && workers.Buildings.Count > 0 ? workers.Buildings[0]
+                : null;
+            if (template == null || workers == null || map == null || !map.TryGetSite(unlock.Need, out var site))
+            {
+                Debug.LogWarning($"Area Unlock {unlock.Area}: budovu sa nepodarilo postaviť (chýba vzor budovy, WorkerManager alebo stavenisko).", this);
+                return;
+            }
+
+            var position = new Vector3(site.x, template.transform.position.y, site.z);
+            var building = template.CloneFor(unlock.Need, position, unlock.Area);
+            workers.AddBuilding(building);
+            map.Refresh();
+            Debug.Log($"Area Unlock {unlock.Area}: postavená budova {unlock.Need} a pridaný Worker (budov {workers.Roster.BuildingCount}, Workerov {workers.Roster.WorkerCount})");
         }
 
         public void Close()

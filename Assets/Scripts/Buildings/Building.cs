@@ -48,6 +48,19 @@ namespace Multikulti.Buildings
             };
             Queue.AllServed += () => Debug.Log($"{need}: all {Queue.ServedCount} units served");
         }
+        public Building CloneFor(Need newNeed, Vector3 position, string objectName)
+        {
+            var holder = new GameObject();
+            holder.SetActive(false);
+            var copy = Instantiate(this, position, transform.rotation, holder.transform);
+            copy.name = objectName;
+            copy.need = newNeed;
+            copy.level = 1;
+            copy.transform.SetParent(transform.parent, true);
+            Destroy(holder);
+            return copy;
+        }
+
         public int Level => level;
         public int MaxLevel => WaveConfig.Current.Buildings.CapacityByLevel.Count;
         public bool IsMaxLevel => level >= MaxLevel;

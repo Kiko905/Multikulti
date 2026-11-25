@@ -79,13 +79,12 @@ namespace Multikulti.Workers
 
         public int AddBuilding()
         {
-            var target = EmptyBuilding;
             var newBuilding = BuildingCount++;
             var worker = m_BuildingOfWorker.Count;
-            m_BuildingOfWorker.Add(target);
+            m_BuildingOfWorker.Add(newBuilding);
 
             AssertValid();
-            WorkerMoved?.Invoke(worker, -1, target);
+            WorkerMoved?.Invoke(worker, -1, newBuilding);
             return newBuilding;
         }
 

@@ -63,6 +63,7 @@ Kontrolu robí `Assets/Editor/Naming/BannedTermsCheck.cs`: pred každým buildom
 | backlog | `Backlog` | jednotky, ktoré ešte čakajú na obsluhu | SCRUM-25 |
 | Worker | `Worker` | pracovník, ktorý zrýchľuje budovu | SCRUM-14 |
 | worker roster | `WorkerRoster` | ktorý Worker stojí na ktorej budove; Workerov je vždy o 1 menej než budov | SCRUM-39 |
+| add building | `WorkerRoster.AddBuilding`, `WorkerManager.AddBuilding` | pridá budovu a jedného Workera, ktorý sa objaví priamo na novej budove; prázdna budova ostáva prázdna | SCRUM-39, SCRUM-52 |
 | worker manager | `WorkerManager` | prepája `WorkerRoster` s budovami v scéne | SCRUM-39 |
 | slot | — | miesto pre Workera v budove; každá budova má 1 slot | SCRUM-39 |
 | has worker | `HasWorker` | na budove stojí Worker | SCRUM-39 |
@@ -139,7 +140,10 @@ Kontrolu robí `Assets/Editor/Naming/BannedTermsCheck.cs`: pred každým buildom
 | purchase block | `PurchaseBlock`, `UpgradeService.UpgradeBlockOf`, `AreaUnlockService.BlockOf` | prečo sa niečo nedá kúpiť (upgrade aj Area Unlock): `None` (dá sa), `BetweenWavesOnly` (prebieha vlna → prvok skryť), `NotAvailableYet` (Area Unlock pred jeho vlnou), `AlreadyOwned` (Area Unlock už kúpený), `MaxLevel` (ukázať MAX), `NotEnoughCoins` (ukázať chýbajúcu sumu); nahrádza `UpgradeBlock` | SCRUM-49, SCRUM-51 |
 | purchase offer | `PurchaseOffer`, `OfferFor` | jedna vec na kúpu: názov pre log Coins, cena a vlastný dôvod predávajúceho, prečo sa nedá kúpiť | SCRUM-51 |
 | purchase rules | `PurchaseRules`, `IsShopOpen`, `BlockOf`, `TryBuy` | jediné miesto s pravidlami nákupu za Coins pre upgrady aj Area Unlock, čisté C#: najprv stav vlny (len medzi vlnami), potom dôvod predávajúceho, potom Coins; Coins sa odpočítajú a až potom sa vec odovzdá | SCRUM-51 |
-| area unlock purchase | `AreaUnlockService.TryBuy`, `Bought` | kúpa Pool/Bungalows za Coins: odpočíta cenu, označí Bought, zavrie Area Unlock a vyvolá udalosť `Bought`, na ktorú SCRUM-52 postaví budovu, need a Workera | SCRUM-51 |
+| area unlock purchase | `AreaUnlockService.TryBuy`, `Bought` | kúpa Pool/Bungalows za Coins: odpočíta cenu, označí Bought, zavrie Area Unlock, postaví budovu (`Build`) a až potom vyvolá udalosť `Bought` | SCRUM-51, SCRUM-52 |
+| unlock building | `AreaUnlockService.Build`, `buildingTemplate` | po kúpe postaví na mieste staveniska budovu s needom odomknutia (Pool → Relax, Bungalows → Ocean View) na leveli 1, pridá ju do `WorkerManager` aj s novým Workerom a obnoví `IslandMap` (stavenisko zmizne); vzor budovy je `buildingTemplate`, inak prvá budova `WorkerManager`; need dostane demand od ďalšej vlny | SCRUM-52 |
+| building clone | `Building.CloneFor` | kópia budovy s iným needom, menom a pozíciou na leveli 1; need sa nastaví ešte pred `Awake`, takže rad budovy vznikne už pre nový need | SCRUM-52 |
+| site position | `IslandMap.TryGetSite` | pozícia staveniska needu na zemi ostrova | SCRUM-52 |
 
 ## Zjednotené
 - Utilization budovy s Workerom: `utilization_worker` (od SCRUM-96 existuje len jeden config, `tools/config.json` bol zmazaný).
