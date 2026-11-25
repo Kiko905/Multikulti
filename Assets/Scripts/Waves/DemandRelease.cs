@@ -62,6 +62,26 @@ namespace Multikulti.Waves
             }
         }
 
+        /// <summary>Copies the release of the current wave for the wave save (SCRUM-27).</summary>
+        public DemandReleaseState Capture() => new DemandReleaseState
+        {
+            wave_timer = WaveTimer,
+            demand = (int[])m_Demand.Clone(),
+            released = (int[])m_Released.Clone()
+        };
+
+        /// <summary>Continues the release exactly where Capture left it (SCRUM-27).</summary>
+        public void Restore(DemandReleaseState state)
+        {
+            if (state == null) throw new ArgumentNullException(nameof(state));
+            WaveTimer = state.wave_timer;
+            for (var i = 0; i < k_Needs.Length; i++)
+            {
+                m_Demand[i] = state.demand != null && i < state.demand.Length ? state.demand[i] : 0;
+                m_Released[i] = state.released != null && i < state.released.Length ? state.released[i] : 0;
+            }
+        }
+
         /// <summary>
         /// Releases every unit that is due at arrivalTime (seconds since the arrival phase started).
         /// Several units of one need can come in one frame when the frame is long.
@@ -108,5 +128,14 @@ namespace Multikulti.Waves
             Need.OceanView => wave.OceanView,
             _ => 0
         };
+    }
+
+    /// <summary>Saved release of a wave (SCRUM-27), one value per Need.</summary>
+    [Serializable]
+    public sealed class DemandReleaseState
+    {
+        public float wave_timer;
+        public int[] demand = Array.Empty<int>();
+        public int[] released = Array.Empty<int>();
     }
 }

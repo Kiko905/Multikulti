@@ -32,6 +32,11 @@ namespace Multikulti.Waves
     /// While WavePaused the buildings of the WorkerManager stop serving (Building.IsPaused) and WaveTime stops,
     /// so nothing advances and nothing gets worse (build document §4.3).
     ///
+    /// Pause and save (SCRUM-27, state diagram "Pozastavená"): entering WavePaused runs entry / UlozitStavVlny —
+    /// the buildings stop and the whole wave is written to WaveSaveState; leaving it runs exit / ObnovitCasovac —
+    /// the timers and buildings continue and the save is deleted. If the app is closed while paused, the next
+    /// start finds the save, restores the wave into WavePaused and resumes it exactly where it stopped.
+    ///
     /// LOCKED needs (SCRUM-34): a need whose building is not bought yet (Pool → Relax, Bungalows → Ocean View)
     /// gets demand 0 on Start Wave, so it releases no units. Buying is possible only between waves,
     /// so a need stays locked or unlocked for the whole wave.
@@ -48,6 +53,10 @@ namespace Multikulti.Waves
         float m_ArrivalTime;
         float m_DrainTime;
         bool m_ArrivalClosed;
+        bool m_Restoring;
+        bool m_ContinueSavedWave;
+        readonly Dictionary<BuildingQueue, (int Arrived, int Served)> m_CountsAtWaveStart =
+            new Dictionary<BuildingQueue, (int Arrived, int Served)>();
         readonly HashSet<Need> m_MissingBuildings = new HashSet<Need>();
         readonly DemandRelease m_Release = new DemandRelease();
         readonly WaveWaitLog m_Waits = new WaveWaitLog();
@@ -129,6 +138,9 @@ namespace Multikulti.Waves
         {
             SetBuildingsClock();
             ObserveBuildings();
+            // Restored in the first frame, after every Start(): the Wave Needs Panel and others take their
+            // Start Wave baseline in Start(), and the restored units of the wave must come on top of it.
+            m_ContinueSavedWave = true;
         }
 
         void OnDestroy()
@@ -142,6 +154,12 @@ namespace Multikulti.Waves
 
         void Update()
         {
+            if (m_ContinueSavedWave)
+            {
+                m_ContinueSavedWave = false;
+                TryContinueSavedWave();
+            }
+
             if (Machine.State == WaveState.WavePaused) return;
             m_StateTime += Time.deltaTime;
             if (Machine.State.IsInWave()) m_WaveTime += Time.deltaTime;
@@ -229,11 +247,16 @@ namespace Multikulti.Waves
                 m_Waits.Clear();
                 SetBuildingsClock();
                 ObserveBuildings();
+                RememberCountsAtWaveStart();
+                WaveSaveState.Delete();
                 PlaytestMetrics.WaveStarted(Machine.Wave);
             }
 
-            if (next == WaveState.WavePaused || previous == WaveState.WavePaused)
-                SetBuildingsPaused(next == WaveState.WavePaused);
+            // State diagram "Pozastavená": entry / UlozitStavVlny, exit / ObnovitCasovac (SCRUM-27).
+            if (next == WaveState.WavePaused)
+                UlozitStavVlny();
+            else if (previous == WaveState.WavePaused)
+                ObnovitCasovac();
 
             ReportState();
             Debug.Log($"Wave {Machine.Wave}: {previous.ToJiraName()} → {next.ToJiraName()}");
@@ -324,6 +347,182 @@ namespace Multikulti.Waves
                 if (waits.Count == 0) continue;
                 Debug.Log($"Wave {Machine.Wave}: {need} waiting avg {m_Waits.Average(need):0.0} s, " +
                           $"max {m_Waits.Max(need):0.0} s ({waits.Count} units)");
+            }
+        }
+
+        /// <summary>
+        /// entry / UlozitStavVlny (SCRUM-27): stops the buildings and saves the whole running wave, so it can
+        /// continue even if the app is closed now.
+        /// </summary>
+        void UlozitStavVlny()
+        {
+            SetBuildingsPaused(true);
+            if (m_Restoring) return;
+
+            try
+            {
+                CaptureWave().Write();
+                Debug.Log($"Wave {Machine.Wave}: paused, wave saved to {WaveSaveState.FilePath}");
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"Wave {Machine.Wave}: paused, but the wave could not be saved: {e.Message}");
+            }
+        }
+
+        /// <summary>
+        /// exit / ObnovitCasovac (SCRUM-27): the wave timers and the buildings continue exactly where they stopped;
+        /// the save is no longer needed.
+        /// </summary>
+        void ObnovitCasovac()
+        {
+            SetBuildingsPaused(false);
+            WaveSaveState.Delete();
+            Debug.Log($"Wave {Machine.Wave}: resumed at {m_WaveTime:0.0} s of the wave");
+        }
+
+        WaveSaveState CaptureWave()
+        {
+            var state = new WaveSaveState
+            {
+                wave = Machine.Wave,
+                wave_time = m_WaveTime,
+                arrival_time = m_ArrivalTime,
+                drain_time = m_DrainTime,
+                arrival_closed = m_ArrivalClosed,
+                release = m_Release.Capture()
+            };
+
+            if (workers != null)
+            {
+                state.worker_layout = workers.CaptureLayout();
+                state.buildings = new BuildingSaveState[workers.Buildings.Count];
+                for (var i = 0; i < workers.Buildings.Count; i++)
+                {
+                    var building = workers.Buildings[i];
+                    var queue = building.Queue;
+                    m_CountsAtWaveStart.TryGetValue(queue, out var atStart);
+                    var seated = new List<UnitSaveState>();
+                    foreach (var unit in queue.Seated)
+                        seated.Add(new UnitSaveState
+                        {
+                            arrived_at = unit.ArrivedAt,
+                            seated_at = unit.SeatedAt ?? unit.ArrivedAt,
+                            progress = unit.ServiceProgress
+                        });
+                    var backlog = new List<UnitSaveState>();
+                    foreach (var unit in queue.Backlog)
+                        backlog.Add(new UnitSaveState { arrived_at = unit.ArrivedAt });
+
+                    state.buildings[i] = new BuildingSaveState
+                    {
+                        need = (int)building.Need,
+                        level = building.Level,
+                        arrived = queue.ArrivedCount - atStart.Arrived,
+                        served = queue.ServedCount - atStart.Served,
+                        seated = seated.ToArray(),
+                        backlog = backlog.ToArray()
+                    };
+                }
+            }
+
+            var waits = new List<UnitWaitSaveState>();
+            foreach (var wait in m_Waits.All)
+                waits.Add(new UnitWaitSaveState
+                {
+                    need = (int)wait.Need, arrived_at = wait.ArrivedAt, seated_at = wait.SeatedAt
+                });
+            state.waits = waits.ToArray();
+            return state;
+        }
+
+        /// <summary>
+        /// On start (SCRUM-27): when the app was closed during a paused wave, restores that wave into WavePaused
+        /// and resumes it — the player comes back to the game ("Hráč sa vráti do hry").
+        /// A save that does not fit the scene or the configuration is dropped and the game starts normally.
+        /// </summary>
+        void TryContinueSavedWave()
+        {
+            var state = WaveSaveState.Read();
+            if (state == null) return;
+
+            if (!FitsScene(state))
+            {
+                Debug.LogWarning("Wave save does not fit this scene or wave_config.json, starting without it.");
+                WaveSaveState.Delete();
+                return;
+            }
+
+            m_Restoring = true;
+            try
+            {
+                RestoreWave(state);
+                Machine.RestorePaused(state.wave);
+            }
+            finally
+            {
+                m_Restoring = false;
+            }
+
+            Debug.Log($"Wave {state.wave}: continued from the save at {m_WaveTime:0.0} s of the wave");
+            Machine.Resume();
+        }
+
+        bool FitsScene(WaveSaveState state)
+        {
+            if (state.wave < 1 || state.wave > Machine.WaveCount || workers == null) return false;
+            if (state.buildings.Length != workers.Buildings.Count) return false;
+            for (var i = 0; i < state.buildings.Length; i++)
+            {
+                if (workers.Buildings[i] == null || (int)workers.Buildings[i].Need != state.buildings[i].need)
+                    return false;
+            }
+            return true;
+        }
+
+        void RestoreWave(WaveSaveState state)
+        {
+            m_WaveTime = state.wave_time;
+            m_ArrivalTime = state.arrival_time;
+            m_DrainTime = state.drain_time;
+            m_ArrivalClosed = state.arrival_closed;
+            m_StateTime = 0f;
+            m_Release.Restore(state.release);
+            m_MissingBuildings.Clear();
+
+            workers.RestoreLayout(state.worker_layout);
+            for (var i = 0; i < state.buildings.Length; i++)
+            {
+                var saved = state.buildings[i];
+                var building = workers.Buildings[i];
+                while (building.Level < saved.level && !building.IsMaxLevel)
+                    building.LevelUp();
+
+                var need = building.Need;
+                var seated = new List<Unit>();
+                foreach (var unit in saved.seated)
+                    seated.Add(new Unit(need, unit.arrived_at) { SeatedAt = unit.seated_at, ServiceProgress = unit.progress });
+                var backlog = new List<Unit>();
+                foreach (var unit in saved.backlog)
+                    backlog.Add(new Unit(need, unit.arrived_at));
+                building.Queue.Restore(saved.arrived, saved.served, seated, backlog);
+            }
+            RememberCountsAtWaveStart();
+
+            m_Waits.Clear();
+            foreach (var wait in state.waits)
+                m_Waits.Restore(new UnitWait((Need)wait.need, wait.arrived_at, wait.seated_at));
+        }
+
+        /// <summary>Counts of every building at Start Wave, so the save holds only the units of this wave.</summary>
+        void RememberCountsAtWaveStart()
+        {
+            m_CountsAtWaveStart.Clear();
+            if (workers == null) return;
+            foreach (var building in workers.Buildings)
+            {
+                if (building != null && building.Queue != null)
+                    m_CountsAtWaveStart[building.Queue] = (building.Queue.ArrivedCount, building.Queue.ServedCount);
             }
         }
 
