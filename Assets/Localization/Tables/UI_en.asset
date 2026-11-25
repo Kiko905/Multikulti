@@ -142,6 +142,42 @@ MonoBehaviour:
     m_Localized: That's more like it!
     m_Metadata:
       m_Items: []
+  - m_Id: 5237297274884125
+    m_Localized: New Area Available
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884126
+    m_Localized: 'Adds: {0} demand'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884127
+    m_Localized: Higher satisfaction potential
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884128
+    m_Localized: 'Includes: 1 Worker'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884129
+    m_Localized: 'Cost: {0} Coins'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884130
+    m_Localized: Unlock
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884131
+    m_Localized: Later
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884132
+    m_Localized: Sunbeds, cool water and lazy afternoons.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884133
+    m_Localized: Bungalows right on the water, with a view.
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []
