@@ -26,6 +26,10 @@ namespace Multikulti.Waves
         public float arrival_time;
         public float drain_time;
         public bool arrival_closed;
+        /// <summary>The Sudden rush of this wave already started (SCRUM-60); it must not start again after a restore.</summary>
+        public bool rush_done;
+        /// <summary>Index of the building hit by the Sudden rush; -1 when there is none.</summary>
+        public int rush_building = -1;
         public DemandReleaseState release = new DemandReleaseState();
         public int[] worker_layout = Array.Empty<int>();
         public BuildingSaveState[] buildings = Array.Empty<BuildingSaveState>();

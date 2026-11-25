@@ -495,12 +495,14 @@ namespace Multikulti.Waves
                 arrival_time = m_ArrivalTime,
                 drain_time = m_DrainTime,
                 arrival_closed = m_ArrivalClosed,
+                rush_done = m_RushDone,
                 release = m_Release.Capture()
             };
 
             if (workers != null)
             {
                 state.worker_layout = workers.CaptureLayout();
+                state.rush_building = SuddenRushBuilding != null ? IndexOfBuilding(SuddenRushBuilding) : -1;
                 state.buildings = new BuildingSaveState[workers.Buildings.Count];
                 for (var i = 0; i < workers.Buildings.Count; i++)
                 {
@@ -591,6 +593,10 @@ namespace Multikulti.Waves
             m_ArrivalTime = state.arrival_time;
             m_DrainTime = state.drain_time;
             m_ArrivalClosed = state.arrival_closed;
+            m_RushDone = state.rush_done;
+            SuddenRushBuilding = state.rush_building >= 0 && state.rush_building < workers.Buildings.Count
+                ? workers.Buildings[state.rush_building]
+                : null;
             m_StateTime = 0f;
             m_Release.Restore(state.release);
             m_MissingBuildings.Clear();
@@ -617,6 +623,13 @@ namespace Multikulti.Waves
             m_Waits.Clear();
             foreach (var wait in state.waits)
                 m_Waits.Restore(new UnitWait((Need)wait.need, wait.arrived_at, wait.seated_at));
+        }
+
+        int IndexOfBuilding(Building building)
+        {
+            for (var i = 0; i < workers.Buildings.Count; i++)
+                if (workers.Buildings[i] == building) return i;
+            return -1;
         }
 
         /// <summary>Counts of every building at Start Wave, so the save holds only the units of this wave.</summary>

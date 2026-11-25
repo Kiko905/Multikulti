@@ -81,7 +81,11 @@ namespace Multikulti.Waves
         {
             wave_timer = WaveTimer,
             demand = (int[])m_Demand.Clone(),
-            released = (int[])m_Released.Clone()
+            released = (int[])m_Released.Clone(),
+            extra = (int[])m_Extra.Clone(),
+            extra_released = (int[])m_ExtraReleased.Clone(),
+            extra_start = (float[])m_ExtraStart.Clone(),
+            extra_duration = (float[])m_ExtraDuration.Clone()
         };
 
         /// <summary>Continues the release exactly where Capture left it (SCRUM-27).</summary>
@@ -93,6 +97,10 @@ namespace Multikulti.Waves
             {
                 m_Demand[i] = state.demand != null && i < state.demand.Length ? state.demand[i] : 0;
                 m_Released[i] = state.released != null && i < state.released.Length ? state.released[i] : 0;
+                m_Extra[i] = state.extra != null && i < state.extra.Length ? state.extra[i] : 0;
+                m_ExtraReleased[i] = state.extra_released != null && i < state.extra_released.Length ? state.extra_released[i] : 0;
+                m_ExtraStart[i] = state.extra_start != null && i < state.extra_start.Length ? state.extra_start[i] : 0f;
+                m_ExtraDuration[i] = state.extra_duration != null && i < state.extra_duration.Length ? state.extra_duration[i] : 0f;
             }
         }
 
@@ -172,5 +180,10 @@ namespace Multikulti.Waves
         public float wave_timer;
         public int[] demand = Array.Empty<int>();
         public int[] released = Array.Empty<int>();
+        /// <summary>Sudden rush units per need (SCRUM-60), so a rush in progress continues after a restore.</summary>
+        public int[] extra = Array.Empty<int>();
+        public int[] extra_released = Array.Empty<int>();
+        public float[] extra_start = Array.Empty<float>();
+        public float[] extra_duration = Array.Empty<float>();
     }
 }
