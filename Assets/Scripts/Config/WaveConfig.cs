@@ -17,6 +17,8 @@ namespace Multikulti.Config
         public const string OverrideFileName = "wave_config.json";
         public const int SupportedSchemaVersion = 1;
         public const int RatingCount = 6;
+        /// <summary>Number of scripted waves in the prototype (SCRUM-28, build document §4.2).</summary>
+        public const int ScriptedWaveCount = 8;
 
         static WaveConfig s_Current;
 
@@ -133,12 +135,18 @@ namespace Multikulti.Config
             RequirePositive(problems, "unlocks.pool_price", unlocks.PoolPrice);
             RequirePositive(problems, "unlocks.bungalows_price", unlocks.BungalowsPrice);
 
-            if (waves.Length == 0)
-                problems.Add("waves is empty.");
+            // SCRUM-28: exactly 8 scripted waves; finishing a wave unlocks the next, larger one.
+            if (waves.Length != ScriptedWaveCount)
+                problems.Add($"waves has {waves.Length} waves, expected {ScriptedWaveCount} scripted waves.");
             for (var i = 0; i < waves.Length; i++)
             {
                 if (waves[i].Wave != i + 1)
                     problems.Add($"waves[{i}].wave is {waves[i].Wave}, expected {i + 1}.");
+                if (waves[i].TotalUnits <= 0)
+                    problems.Add($"wave {i + 1} has no units.");
+                if (i > 0 && waves[i].TotalUnits <= waves[i - 1].TotalUnits)
+                    problems.Add($"wave {i + 1} has {waves[i].TotalUnits} units, " +
+                                 $"it must be larger than wave {i} ({waves[i - 1].TotalUnits} units).");
             }
 
             return problems;
@@ -368,5 +376,8 @@ namespace Multikulti.Config
         public int Food => food;
         public int Relax => relax;
         public int OceanView => ocean_view;
+
+        /// <summary>All units of the wave (sum over every need); "jednotky vlny" for the reward (SCRUM-45).</summary>
+        public int TotalUnits => rooms + drinks + food + relax + ocean_view;
     }
 }
