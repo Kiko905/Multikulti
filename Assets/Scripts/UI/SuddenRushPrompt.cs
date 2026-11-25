@@ -1,4 +1,5 @@
 using Multikulti.Buildings;
+using Multikulti.Economy;
 using Multikulti.Waves;
 using UnityEngine;
 
@@ -11,7 +12,8 @@ namespace Multikulti.UI
     ///
     /// Move Worker here takes the Worker from the staffed building with the fewest pending units; the Worker goes
     /// to the only building without one, which is the building of the rush (WorkerRoster.ChooseTarget).
-    /// Use Energy to serve faster comes with the Energy boost (SCRUM-57); until then the prompt does not offer it.
+    /// Use Energy to serve faster starts the Energy boost Speed Up at the building of the rush (SCRUM-57); the button
+    /// is disabled when the boost is blocked, e.g. without enough Energy or when the building already used it.
     ///
     /// Added to the WaveLoop object at runtime, so the scene does not change. Graybox IMGUI until the S2 art.
     /// </summary>
@@ -79,6 +81,15 @@ namespace Multikulti.UI
             GUILayout.BeginHorizontal();
             if (GUILayout.Button("Move Worker here", GUILayout.Height(32f)))
                 MoveWorkerHere();
+            var speedUp = GetComponent<SpeedUpService>();
+            if (speedUp != null)
+            {
+                GUI.enabled = speedUp.CanSpeedUp(m_Target);
+                if (GUILayout.Button($"Use Energy ({speedUp.Rules.EnergyCost})", GUILayout.Height(32f)) &&
+                    speedUp.TrySpeedUp(m_Target))
+                    Close("Use Energy");
+                GUI.enabled = true;
+            }
             if (GUILayout.Button("Ignore", GUILayout.Height(32f), GUILayout.Width(90f)))
                 Close("Ignore");
             GUILayout.EndHorizontal();

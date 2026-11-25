@@ -112,7 +112,11 @@ Kontrolu robí `Assets/Editor/Naming/BannedTermsCheck.cs`: pred každým buildom
 | Reputation | `Reputation` | skóre za VIP, nikdy neklesá | SCRUM-66 |
 | Materials | `Materials` | mena za VIP a vlny 4★+ | SCRUM-69 |
 | Gems | `Gems` | platená mena | SCRUM-69 |
-| Speed Up | `SpeedUp` | Energy boost obsluhy | SCRUM-57 |
+| Speed Up | `SpeedUp` | Energy boost obsluhy: za `energy_cost` Energy (3) skráti `service_time` preťaženej budovy na `service_time_multiplier` (polovicu) na `duration_s` (15 s); najviac `max_per_building_per_wave` (1) boost na budovu za vlnu | SCRUM-57 |
+| speed up rules | `SpeedUpRules`, `SpeedFactor`, `ResetWave`, `EndAll` | pravidlá Speed Up, čisté C#: počíta použitia a trvanie boostu na čase `WaveTime` (vo `WavePaused` stojí); boost nastaví `SpeedMultiplier` na 1 / `service_time_multiplier`, takže zrýchli aj práve obsluhované jednotky | SCRUM-57 |
+| speed up service | `SpeedUpService`, `TrySpeedUp`, `Offers`, `IsOverloaded` | Speed Up v scéne: preťažená budova = need v stave BOTTLENECK alebo budova so Sudden rush; `TrySpeedUp` odpočíta Energy a spustí boost; nová vlna zabudne použitia, koniec vlny ukončí bežiace boosty; udalosti `Started`, `Ended` | SCRUM-57 |
+| speed up block | `SpeedUpBlock` | prečo sa Speed Up nedá použiť: `None`, `NotInWave`, `NotOverloaded`, `Active` (už beží), `UsedThisWave`, `NotEnoughEnergy` (ponuka sa ukáže s chýbajúcou sumou) | SCRUM-57 |
+| overloaded | `IsOverloaded` | preťažená budova, pri ktorej hra ponúkne Speed Up | SCRUM-57 |
 | Sudden rush | `SuddenRush` | mini-event vo vlne 2 | SCRUM-60 |
 | Area Unlock | `AreaUnlock` | odomknutie Pool/Bungalows: oblasť, need, od ktorej vlny je dostupné a cena v Coins (`unlocks` v `wave_config.json`) | SCRUM-51, SCRUM-53 |
 | area unlock state | `AreaUnlockState` | stav staveniska: Locked (ešte nie je po vlne `*_after_wave`), Available (sprístupnené, ale nekúpené), Bought (kúpené cez `TryBuy`, alebo v scéne už je budova s jeho needom) | SCRUM-53, SCRUM-51 |
@@ -133,6 +137,7 @@ Kontrolu robí `Assets/Editor/Naming/BannedTermsCheck.cs`: pred každým buildom
 | level up | `LevelUp` | zvýši level budovy o 1 a hneď zväčší capacity; čakajúce jednotky sa posadia na nové miesta | SCRUM-50 |
 | upgrade service | `UpgradeService`, `PriceOf`, `CanUpgrade`, `TryUpgrade` | nákup upgradu za Coins: cena z `upgrade_prices`, odpočíta Coins a zavolá `LevelUp`; udalosť `Upgraded`; budova sama o peniazoch nevie | SCRUM-50 |
 | currency wallet | `CurrencyWallet`, `Balance`, `Add`, `TrySpend`, `CanAfford`, `Missing` | zostatok jednej meny, čisté C#; meniť ho dá len cez `Add` (napr. odmena za vlnu) a `TrySpend` (upgrade, unlock), nikdy neklesne pod 0; udalosť `Changed` (starý zostatok, nový zostatok, dôvod); rovnakú triedu použije aj Energy | SCRUM-55 |
+| energy wallet | `ResortBalances.EnergyWallet` | peňaženka Energy v scéne (rovnaká `CurrencyWallet` ako Coins); Speed Up míňa Energy cez `EnergyWallet.TrySpend` | SCRUM-57 |
 | coin wallet | `ResortBalances.CoinWallet` | peňaženka Coins v scéne; `Coins` sa dá už len čítať, pripisuje sa cez `CoinWallet.Add` (SCRUM-45) | SCRUM-55 |
 | missing coins | `Missing`, `PurchaseRules.MissingCoins`, `UpgradeService.MissingCoins`, `AreaUnlockService.MissingCoins`, `economy.missing_coins` | koľko Coins chýba na cenu; text v UI „Missing: {0} Coins“ z tabuľky `UI` | SCRUM-55 |
 | between waves | `WaveState.IsBetweenWaves()` | stavy vlny, v ktorých sa dá nakupovať (upgrade aj Area Unlock, cez `PurchaseRules`): `AwaitingWave` a `Upgrade`; počas vlny, na obrazovke výsledku ani vo `WavePaused` nie | SCRUM-49, SCRUM-51 |
