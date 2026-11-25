@@ -31,8 +31,8 @@ Kontrolu robí `Assets/Editor/Naming/BannedTermsCheck.cs`: pred každým buildom
 | Jira | C# enum `NeedState` | UI (EN) | Význam |
 | --- | --- | --- | --- |
 | OK | `Ok` | — | rad je pod `bottleneck_threshold`, alebo nad ním ešte kratšie než `bottleneck_hysteresis_s` |
-| BOTTLENECK | `Bottleneck` | warning | rad je ≥ `bottleneck_threshold` aspoň `bottleneck_hysteresis_s` sekúnd |
-| RECOVERING | `Recovering` | „… is catching up“ | po BOTTLENECK rad klesol pod prah; po `bottleneck_hysteresis_s` pod prahom → OK, nad prahom hneď späť BOTTLENECK |
+| BOTTLENECK | `Bottleneck` | „queue growing“ (oranžový riadok), toast „{Building} queue growing“ | rad je ≥ `bottleneck_threshold` aspoň `bottleneck_hysteresis_s` sekúnd |
+| RECOVERING | `Recovering` | „catching up“ (zelený riadok), toast „{Building} is catching up“ | po BOTTLENECK rad klesol pod prah; po `bottleneck_hysteresis_s` pod prahom → OK, nad prahom hneď späť BOTTLENECK |
 | SATISFIED | `Satisfied` | — | prišiel celý demand needu vo vlne a všetky jednotky sú obslúžené; do konca vlny sa nemení |
 | LOCKED | `Locked` | — | budova needu (Pool → Relax, Bungalows → Ocean View) ešte nie je kúpená: need nemá demand, vlna jeho jednotky neposiela a na Wave Needs Paneli sa nezobrazuje; platí aj v stave staveniska Available |
 
@@ -132,6 +132,8 @@ Kontrolu robí `Assets/Editor/Naming/BannedTermsCheck.cs`: pred každým buildom
 | need state | `NeedState` | stav needu vo vlne: OK, BOTTLENECK, RECOVERING, SATISFIED, LOCKED | SCRUM-32, SCRUM-34 |
 | need state tracker | `NeedStateTracker` | prechody stavov jedného needu s hysteréziou, čisté C# | SCRUM-32 |
 | need state board | `NeedStateBoard` | v scéne posúva stavy všetkých needov; rad needu = súčet backlogov všetkých jeho budov; na Start Wave vráti needy na OK; udalosť `StateChanged` | SCRUM-32 |
+| need warning | `WaveNeedsPanel.ShownState` | farebný riadok needu vo Wave Needs Paneli: BOTTLENECK oranžový s „queue growing“, RECOVERING zelený s „catching up“ (nesmie vyzerať ako hotové); stĺpec stavu má pevnú šírku, riadok sa neposúva | SCRUM-33 |
+| guest feedback toast | `GuestFeedbackToasts` | krátka správa v S2 dole v strede v tom istom frame ako zmena stavu needu: BOTTLENECK „{Building} queue growing“ + veta hosťa (napr. „Food takes a bit too long.“), RECOVERING „{Building} is catching up“ + „That's more like it!“; jeden toast na need (nový stav ho nahradí), max 3 naraz, 3,5 s + 0,4 s fade, rovnaký toast needu znova až po 8 s (cooldown); po konci vlny zmiznú; komponent sa pridá za behu na `NeedStateBoard` | SCRUM-33 |
 | hysteresis | `bottleneck_hysteresis_s` | koľko sekúnd musí podmienka platiť, kým need prejde OK → BOTTLENECK alebo RECOVERING → OK | SCRUM-32 |
 | level | `Level`, `MaxLevel`, `IsMaxLevel` | level budovy 1–3; určuje capacity podľa `capacity_by_level` (3 → 5 → 7) | SCRUM-50 |
 | level up | `LevelUp` | zvýši level budovy o 1 a hneď zväčší capacity; čakajúce jednotky sa posadia na nové miesta | SCRUM-50 |

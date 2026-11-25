@@ -166,7 +166,8 @@ namespace Multikulti.UI
 
         static string Format(int value) => value.ToString("N0", CultureInfo.InvariantCulture);
 
-        static string BuildingKey(Need need) => need switch
+        /// <summary>Localization key of the building name for a need (also used by GuestFeedbackToasts).</summary>
+        internal static string BuildingKey(Need need) => need switch
         {
             Need.Rooms => "building.rooms",
             Need.Drinks => "building.drinks",

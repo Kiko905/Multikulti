@@ -102,6 +102,46 @@ MonoBehaviour:
     m_Localized: 'Missing: {0} Coins'
     m_Metadata:
       m_Items: []
+  - m_Id: 5237297274884115
+    m_Localized: queue growing
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884116
+    m_Localized: catching up
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884117
+    m_Localized: '{0} queue growing'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884118
+    m_Localized: '{0} is catching up'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884119
+    m_Localized: Check-in takes a bit too long.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884120
+    m_Localized: Drinks take a bit too long.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884121
+    m_Localized: Food takes a bit too long.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884122
+    m_Localized: No free sunbed at the pool.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884123
+    m_Localized: Still waiting for my bungalow.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884124
+    m_Localized: That's more like it!
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []
