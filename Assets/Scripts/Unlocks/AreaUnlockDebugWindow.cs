@@ -11,12 +11,15 @@ namespace Multikulti.Unlocks
         [SerializeField] ResortBalances balances;
 
         AreaUnlockService m_Service;
+        bool m_HasScreen;
 
         void Start()
         {
             m_Service = GetComponent<AreaUnlockService>();
             if (balances == null)
                 balances = FindAnyObjectByType<ResortBalances>();
+            // S9 lives in Multikulti.UI; found by name so the Unlocks code does not depend on the UI.
+            m_HasScreen = GetComponent("AreaUnlockScreen") != null;
         }
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
@@ -28,7 +31,8 @@ namespace Multikulti.Unlocks
             GUI.matrix = Matrix4x4.Scale(new Vector3(scale, scale, 1f));
 
             DrawSiteLabels(scale);
-            if (m_Service.Open.HasValue)
+            // The purchase window itself is S9 Area Unlock (AreaUnlockScreen, SCRUM-112); this one only without it.
+            if (m_Service.Open.HasValue && !m_HasScreen)
                 DrawWindow(m_Service.Open.Value, scale);
 
             GUI.matrix = Matrix4x4.identity;

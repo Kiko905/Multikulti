@@ -139,6 +139,42 @@ MonoBehaviour:
     m_Key: toast.guest.better
     m_Metadata:
       m_Items: []
+  - m_Id: 5237297274884125
+    m_Key: area_unlock.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884126
+    m_Key: area_unlock.adds
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884127
+    m_Key: area_unlock.satisfaction
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884128
+    m_Key: area_unlock.includes_worker
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884129
+    m_Key: area_unlock.cost
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884130
+    m_Key: area_unlock.unlock
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884131
+    m_Key: area_unlock.later
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884132
+    m_Key: area_unlock.flavour.relax
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884133
+    m_Key: area_unlock.flavour.ocean_view
+    m_Metadata:
+      m_Items: []
   m_Metadata:
     m_Items: []
   m_KeyGenerator:
