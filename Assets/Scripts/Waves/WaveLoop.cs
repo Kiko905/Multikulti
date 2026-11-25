@@ -237,6 +237,24 @@ namespace Multikulti.Waves
 
             ReportState();
             Debug.Log($"Wave {Machine.Wave}: {previous.ToJiraName()} → {next.ToJiraName()}");
+
+            if (next == WaveState.WaveComplete)
+                LogNextWave();
+        }
+
+        /// <summary>
+        /// SCRUM-28: after a finished wave tells which scripted wave comes next and how large it is,
+        /// or that all scripted waves are done.
+        /// </summary>
+        void LogNextWave()
+        {
+            var waves = WaveConfig.Current.Waves;
+            var nextIndex = Machine.Wave; // Wave is 1-based, so the next wave's index equals the current number.
+            if (nextIndex < waves.Count)
+                Debug.Log($"Wave {Machine.Wave}/{Machine.WaveCount} complete, next wave {nextIndex + 1} " +
+                          $"has {waves[nextIndex].TotalUnits} units");
+            else
+                Debug.Log($"Wave {Machine.Wave}/{Machine.WaveCount} complete, all scripted waves finished");
         }
 
         WaveDefinition CurrentWave()
