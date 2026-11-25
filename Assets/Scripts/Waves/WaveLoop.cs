@@ -15,7 +15,7 @@ namespace Multikulti.Waves
     ///
     /// Graybox behaviour until the related stories are done:
     /// WaveIncoming moves on to WaveActive after incomingSeconds, while ShipArrival sails the ship in (SCRUM-23),
-    /// and WaveResolving moves on to WaveComplete in the next frame (the result comes with SCRUM-43).
+    /// and WaveResolving moves on to WaveComplete in the next frame.
     ///
     /// Arrival and drain (SCRUM-25): wave_timer seconds after WaveActive starts, arrival closes and no new
     /// guests come; the wave keeps running until every building has served all its units (Queue.IsAllServed),
@@ -28,6 +28,9 @@ namespace Multikulti.Waves
     /// Waiting (SCRUM-42): when a building seats a unit during the wave, its waiting (arrival → seated) goes
     /// into Waits; the service time is not counted. Waits is cleared on Start Wave and summarised in the log
     /// when the wave resolves.
+    ///
+    /// Wave Satisfaction (SCRUM-43): when the last unit is served, Waits is turned into one Wave Satisfaction
+    /// (WaveSatisfaction.Calculate) before WaveResolving; it stays in Satisfaction until the next Start Wave.
     ///
     /// While WavePaused the buildings of the WorkerManager stop serving (Building.IsPaused) and WaveTime stops,
     /// so nothing advances and nothing gets worse (build document §4.3).
@@ -104,6 +107,12 @@ namespace Multikulti.Waves
         /// <summary>Waiting of every unit seated in the current wave (SCRUM-42).</summary>
         public WaveWaitLog Waits => m_Waits;
 
+        /// <summary>
+        /// Wave Satisfaction of the last finished wave (SCRUM-43); calculated when the wave enters WaveResolving.
+        /// Null before the first wave finishes and again from Start Wave until the wave is resolved.
+        /// </summary>
+        public WaveSatisfactionResult? Satisfaction { get; private set; }
+
         /// <summary>Seconds from the end of arrival until every building served all units (drain_s in playtest metrics).</summary>
         public float DrainSeconds => m_DrainTime;
 
@@ -175,6 +184,7 @@ namespace Multikulti.Waves
             {
                 Debug.Log($"Wave {Machine.Wave}: all units served, drain {m_DrainTime:0.0} s");
                 LogWaits();
+                CalculateSatisfaction();
                 Machine.Resolve();
             }
         }
@@ -227,6 +237,7 @@ namespace Multikulti.Waves
                 LogLockedNeeds();
                 m_MissingBuildings.Clear();
                 m_Waits.Clear();
+                Satisfaction = null;
                 SetBuildingsClock();
                 ObserveBuildings();
                 PlaytestMetrics.WaveStarted(Machine.Wave);
@@ -314,6 +325,24 @@ namespace Multikulti.Waves
         {
             if (Machine.State.IsInWave())
                 m_Waits.Record(unit);
+        }
+
+        /// <summary>SCRUM-43: turns the waits of the wave into Wave Satisfaction and logs it with the per-need breakdown.</summary>
+        void CalculateSatisfaction()
+        {
+            var result = WaveSatisfaction.Calculate(m_Waits.All, WaveConfig.Current.Satisfaction);
+            Satisfaction = result;
+
+            var breakdown = new System.Text.StringBuilder();
+            foreach (Need need in Enum.GetValues(typeof(Need)))
+            {
+                if (result.UnitsOf(need) == 0) continue;
+                if (breakdown.Length > 0) breakdown.Append(", ");
+                breakdown.Append($"{need} {result.Of(need):P0}");
+            }
+            var floor = result.IsOnWaveFloor ? $" (raw {result.RawValue:P0}, lifted to wave_floor)" : "";
+            Debug.Log($"Wave {Machine.Wave}: Wave Satisfaction {result.Value:P0}{floor}, " +
+                      $"{result.Units} units — {breakdown}");
         }
 
         void LogWaits()
