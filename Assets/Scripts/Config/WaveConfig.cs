@@ -19,6 +19,14 @@ namespace Multikulti.Config
         public const int RatingCount = 6;
         /// <summary>Number of scripted waves in the prototype (SCRUM-28, build document §4.2).</summary>
         public const int ScriptedWaveCount = 8;
+        /// <summary>
+        /// How far the volume of a debuting need may be from debut_need_volume_ratio (SCRUM-54, "~50 %").
+        /// 0.1 lets the premium Ocean View debut lower (10 of ~24 = 42 %) and still fails a forgotten soft debut.
+        /// </summary>
+        public const float DebutVolumeTolerance = 0.1f;
+
+        // Needs of a wave in the same order as the columns of the wave table (build document §4.8).
+        static readonly string[] k_NeedNames = { "rooms", "drinks", "food", "relax", "ocean_view" };
 
         static WaveConfig s_Current;
 
@@ -149,7 +157,64 @@ namespace Multikulti.Config
                                  $"it must be larger than wave {i} ({waves[i - 1].TotalUnits} units).");
             }
 
+            // SCRUM-54: a new need debuts softly in the first wave after its unlock (growth rules 2 and 3).
+            RequirePositive(problems, "unlocks.debut_need_volume_ratio", unlocks.DebutNeedVolumeRatio);
+            CheckDebutWave(problems, unlocks.PoolAfterWave + 1, 3);
+            CheckDebutWave(problems, unlocks.BungalowsAfterWave + 1, 4);
+
             return problems;
+        }
+
+        /// <summary>True for the first wave after an unlock, in which a new need debuts (SCRUM-54).</summary>
+        public bool IsDebutWave(int wave) =>
+            wave == unlocks.PoolAfterWave + 1 || wave == unlocks.BungalowsAfterWave + 1;
+
+        /// <summary>
+        /// SCRUM-54, build document "Pravidlá rastu":
+        /// rule 2 — the new need is not in any earlier wave and in its debut wave has about debut_need_volume_ratio
+        /// of the volume of an established need (the average of the other needs of that wave);
+        /// rule 3 — in the debut wave the other needs do not grow, they keep the values of the previous wave.
+        /// </summary>
+        void CheckDebutWave(List<string> problems, int debutWave, int newNeed)
+        {
+            var name = k_NeedNames[newNeed];
+            if (debutWave < 2 || debutWave > waves.Length)
+            {
+                problems.Add($"debut wave of {name} is {debutWave}, outside the {waves.Length} scripted waves.");
+                return;
+            }
+
+            for (var i = 0; i < debutWave - 1; i++)
+            {
+                if (waves[i].Units(newNeed) > 0)
+                    problems.Add($"{name} is in wave {i + 1}, before its debut wave {debutWave}.");
+            }
+
+            var debut = waves[debutWave - 1];
+            var previous = waves[debutWave - 2];
+            if (debut.Units(newNeed) <= 0)
+            {
+                problems.Add($"{name} has no units in its debut wave {debutWave}.");
+                return;
+            }
+
+            var established = 0;
+            var sum = 0;
+            for (var need = 0; need < k_NeedNames.Length; need++)
+            {
+                if (need == newNeed || previous.Units(need) == 0) continue;
+                if (debut.Units(need) > previous.Units(need))
+                    problems.Add($"{k_NeedNames[need]} grows in debut wave {debutWave} " +
+                                 $"({previous.Units(need)} → {debut.Units(need)}); it must keep the value of wave {debutWave - 1}.");
+                established++;
+                sum += debut.Units(need);
+            }
+
+            if (established == 0) return;
+            var ratio = debut.Units(newNeed) / (sum / (float)established);
+            if (Math.Abs(ratio - unlocks.DebutNeedVolumeRatio) > DebutVolumeTolerance)
+                problems.Add($"{name} has {debut.Units(newNeed)} units in debut wave {debutWave}, {ratio:P0} of an " +
+                             $"established need; expected about {unlocks.DebutNeedVolumeRatio:P0}.");
         }
 
         static void RequirePositive(List<string> problems, string name, float value)
@@ -379,5 +444,16 @@ namespace Multikulti.Config
 
         /// <summary>All units of the wave (sum over every need); "jednotky vlny" for the reward (SCRUM-45).</summary>
         public int TotalUnits => rooms + drinks + food + relax + ocean_view;
+
+        /// <summary>Units of one need by its column index: 0 rooms, 1 drinks, 2 food, 3 relax, 4 ocean_view.</summary>
+        public int Units(int need) => need switch
+        {
+            0 => rooms,
+            1 => drinks,
+            2 => food,
+            3 => relax,
+            4 => ocean_view,
+            _ => 0
+        };
     }
 }
