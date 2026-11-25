@@ -99,6 +99,46 @@ MonoBehaviour:
     m_Key: economy.missing_coins
     m_Metadata:
       m_Items: []
+  - m_Id: 5237297274884115
+    m_Key: wave_needs.queue_growing
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884116
+    m_Key: wave_needs.catching_up
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884117
+    m_Key: toast.queue_growing
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884118
+    m_Key: toast.catching_up
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884119
+    m_Key: toast.guest.rooms
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884120
+    m_Key: toast.guest.drinks
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884121
+    m_Key: toast.guest.food
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884122
+    m_Key: toast.guest.relax
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884123
+    m_Key: toast.guest.ocean_view
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884124
+    m_Key: toast.guest.better
+    m_Metadata:
+      m_Items: []
   m_Metadata:
     m_Items: []
   m_KeyGenerator:
