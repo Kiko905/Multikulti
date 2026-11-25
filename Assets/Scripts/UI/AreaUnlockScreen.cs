@@ -48,7 +48,9 @@ namespace Multikulti.UI
         const float PanelWidth = 760f;
 
         static readonly Color k_DimColor = new Color(0f, 0f, 0f, 0.55f);
-        static readonly Color k_PanelColor = new Color(0.07f, 0.09f, 0.12f, 0.96f);
+        // Fully opaque: the project renders in linear colour space, where even a few percent of the bright
+        // island would show through the dark panel.
+        static readonly Color k_PanelColor = new Color(0.07f, 0.09f, 0.12f, 1f);
         static readonly Color k_TextColor = Color.white;
         static readonly Color k_MutedColor = new Color(1f, 1f, 1f, 0.7f);
         static readonly Color k_MissingColor = new Color(1f, 0.45f, 0.4f);
