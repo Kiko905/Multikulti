@@ -35,6 +35,11 @@ namespace Multikulti.Waves
     /// While WavePaused the buildings of the WorkerManager stop serving (Building.IsPaused) and WaveTime stops,
     /// so nothing advances and nothing gets worse (build document §4.3).
     ///
+    /// Sudden rush (SCRUM-60): once, in wave sudden_rush.wave at sudden_rush.time_s of the arrival phase, extra_units
+    /// of the need of the building that has no Worker arrive over duration_s on top of demand_total. The wave is not
+    /// paused; SuddenRushPrompt offers Move Worker here / Ignore. The rush is plain extra demand: it is served and
+    /// rated by waiting like every other unit and counts into the units of the wave.
+    ///
     /// LOCKED needs (SCRUM-34): a need whose building is not bought yet (Pool → Relax, Bungalows → Ocean View)
     /// gets demand 0 on Start Wave, so it releases no units. Buying is possible only between waves,
     /// so a need stays locked or unlocked for the whole wave.
@@ -51,6 +56,7 @@ namespace Multikulti.Waves
         float m_ArrivalTime;
         float m_DrainTime;
         bool m_ArrivalClosed;
+        bool m_RushDone;
         readonly HashSet<Need> m_MissingBuildings = new HashSet<Need>();
         readonly DemandRelease m_Release = new DemandRelease();
         readonly WaveWaitLog m_Waits = new WaveWaitLog();
@@ -119,6 +125,15 @@ namespace Multikulti.Waves
         /// <summary>Raised once per wave when arrival closes and the drain starts.</summary>
         public event Action ArrivalClosed;
 
+        /// <summary>Raised when a Sudden rush starts (SCRUM-60), with the building it hits.</summary>
+        public event Action<Building> SuddenRushStarted;
+
+        /// <summary>Building hit by the Sudden rush of the current wave (SCRUM-60); null when there is none.</summary>
+        public Building SuddenRushBuilding { get; private set; }
+
+        /// <summary>Buildings and Workers of the scene.</summary>
+        public WorkerManager Workers => workers;
+
         /// <summary>
         /// SCRUM-34: the building of this need is not bought yet, so the need is LOCKED:
         /// no demand and not on the Wave Needs Panel. Without an AreaUnlockService nothing is locked.
@@ -174,6 +189,7 @@ namespace Multikulti.Waves
             if (!m_ArrivalClosed)
             {
                 m_ArrivalTime += deltaTime;
+                TryStartSuddenRush();
                 m_Release.Advance(m_ArrivalTime, SendUnit);
                 if (m_ArrivalTime >= WaveTimer) CloseArrival();
                 return;
@@ -200,6 +216,46 @@ namespace Multikulti.Waves
             m_Release.ReleaseRemaining(SendUnit);
             Debug.Log($"Wave {Machine.Wave}: arrival closed after {m_ArrivalTime:0.0} s, drain starts");
             ArrivalClosed?.Invoke();
+        }
+
+        /// <summary>
+        /// SCRUM-60: starts the Sudden rush once its time in the arrival phase has come. It hits the building
+        /// without a Worker (in the prototype there is always exactly one), so moving a Worker there always helps.
+        /// </summary>
+        void TryStartSuddenRush()
+        {
+            if (m_RushDone) return;
+            var rush = WaveConfig.Current.SuddenRush;
+            if (rush.Wave != Machine.Wave || rush.ExtraUnits <= 0 || m_ArrivalTime < rush.TimeSeconds) return;
+            m_RushDone = true;
+
+            var target = BuildingWithoutWorker();
+            if (target == null)
+            {
+                Debug.LogWarning($"Wave {Machine.Wave}: Sudden rush skipped, every building of the wave has a Worker.");
+                return;
+            }
+
+            m_Release.AddRush(target.Need, rush.ExtraUnits, rush.TimeSeconds, rush.DurationSeconds);
+            SuddenRushBuilding = target;
+            Debug.Log($"Wave {Machine.Wave}: Sudden rush at {target.name}! +{rush.ExtraUnits} {target.Need} " +
+                      $"over {rush.DurationSeconds:0} s (now {m_Release.Demand(target.Need)} in the wave)");
+            SuddenRushStarted?.Invoke(target);
+        }
+
+        /// <summary>The building of an unlocked need that has no Worker; prefers one whose need is in the wave.</summary>
+        Building BuildingWithoutWorker()
+        {
+            if (workers == null) return null;
+            Building fallback = null;
+            foreach (var building in workers.Buildings)
+            {
+                if (building == null || building.Queue == null || building.HasWorker || IsNeedLocked(building.Need))
+                    continue;
+                if (m_Release.Demand(building.Need) > 0) return building;
+                fallback ??= building;
+            }
+            return fallback;
         }
 
         /// <summary>True when no building has a unit seated or waiting (backlog 0 for every need).</summary>
@@ -233,6 +289,8 @@ namespace Multikulti.Waves
                 m_ArrivalTime = 0f;
                 m_DrainTime = 0f;
                 m_ArrivalClosed = false;
+                m_RushDone = false;
+                SuddenRushBuilding = null;
                 m_Release.Begin(CurrentWave(), WaveTimer, IsNeedLocked);
                 LogLockedNeeds();
                 m_MissingBuildings.Clear();

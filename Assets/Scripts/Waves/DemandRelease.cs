@@ -12,6 +12,9 @@ namespace Multikulti.Waves
     ///
     /// Pure C#: WaveLoop calls Begin on Start Wave, Advance every frame of the arrival phase with the
     /// arrival time (it stops while WavePaused) and ReleaseRemaining when arrival closes.
+    ///
+    /// Sudden rush (SCRUM-60): AddRush adds extra units of one need on top of demand_total, released evenly
+    /// from the rush start over its duration. They count into Demand, so the wave ends only after they are served.
     /// </summary>
     public sealed class DemandRelease
     {
@@ -19,6 +22,10 @@ namespace Multikulti.Waves
 
         readonly int[] m_Demand = new int[k_Needs.Length];
         readonly int[] m_Released = new int[k_Needs.Length];
+        readonly int[] m_Extra = new int[k_Needs.Length];
+        readonly int[] m_ExtraReleased = new int[k_Needs.Length];
+        readonly float[] m_ExtraStart = new float[k_Needs.Length];
+        readonly float[] m_ExtraDuration = new float[k_Needs.Length];
 
         /// <summary>Length of the arrival phase the current wave was started with.</summary>
         public float WaveTimer { get; private set; }
@@ -30,17 +37,20 @@ namespace Multikulti.Waves
             {
                 for (var i = 0; i < k_Needs.Length; i++)
                 {
-                    if (m_Released[i] < m_Demand[i]) return false;
+                    if (m_Released[i] < m_Demand[i] || m_ExtraReleased[i] < m_Extra[i]) return false;
                 }
                 return true;
             }
         }
 
-        /// <summary>demand_total of a need in the current wave.</summary>
-        public int Demand(Need need) => m_Demand[(int)need];
+        /// <summary>All units of a need in the current wave: demand_total plus Sudden rush units (SCRUM-60).</summary>
+        public int Demand(Need need) => m_Demand[(int)need] + m_Extra[(int)need];
 
-        /// <summary>Units of a need released so far in the current wave.</summary>
-        public int Released(Need need) => m_Released[(int)need];
+        /// <summary>Sudden rush units of a need added to the current wave (SCRUM-60); 0 without a rush.</summary>
+        public int ExtraDemand(Need need) => m_Extra[(int)need];
+
+        /// <summary>Units of a need released so far in the current wave, Sudden rush units included.</summary>
+        public int Released(Need need) => m_Released[(int)need] + m_ExtraReleased[(int)need];
 
         /// <summary>Release rate of a need in units per second (demand_total ÷ wave_timer).</summary>
         public float Rate(Need need) => WaveTimer > 0f ? m_Demand[(int)need] / WaveTimer : 0f;
@@ -59,7 +69,24 @@ namespace Multikulti.Waves
                 var locked = isLocked != null && isLocked(k_Needs[i]);
                 m_Demand[i] = wave != null && !locked ? Math.Max(0, DemandOf(wave, k_Needs[i])) : 0;
                 m_Released[i] = 0;
+                m_Extra[i] = 0;
+                m_ExtraReleased[i] = 0;
+                m_ExtraStart[i] = 0f;
+                m_ExtraDuration[i] = 0f;
             }
+        }
+
+        /// <summary>
+        /// Sudden rush (SCRUM-60): adds units of one need to the current wave. They arrive evenly from
+        /// startTime (arrival time in seconds) over duration seconds; the first one comes at startTime.
+        /// </summary>
+        public void AddRush(Need need, int units, float startTime, float duration)
+        {
+            if (units <= 0) return;
+            var i = (int)need;
+            m_Extra[i] += units;
+            m_ExtraStart[i] = startTime;
+            m_ExtraDuration[i] = Math.Max(0.01f, duration);
         }
 
         /// <summary>
@@ -75,6 +102,14 @@ namespace Multikulti.Waves
                 while (m_Released[i] < due)
                 {
                     m_Released[i]++;
+                    release(k_Needs[i]);
+                }
+
+                if (m_Extra[i] == 0) continue;
+                var extraDue = DueCount(m_Extra[i], m_ExtraDuration[i], arrivalTime - m_ExtraStart[i]);
+                while (m_ExtraReleased[i] < extraDue)
+                {
+                    m_ExtraReleased[i]++;
                     release(k_Needs[i]);
                 }
             }
