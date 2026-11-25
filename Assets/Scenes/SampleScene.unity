@@ -804,7 +804,7 @@ GameObject:
   - component: {fileID: 950871072}
   - component: {fileID: 950871071}
   m_Layer: 0
-  m_Name: Pool
+  m_Name: Rooms
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -849,7 +849,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a096a50b4d3cabb45adfc3d91381e208, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Multikulti.Buildings.Building
-  need: 3
+  need: 0
   level: 1
 --- !u!65 &950871073
 BoxCollider:

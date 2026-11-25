@@ -154,6 +154,18 @@ namespace Multikulti.Island
             return new Vector3(bounds.center.x, bounds.max.y + MarkerLift, bounds.center.z);
         }
 
+        public bool TryGetSite(Need need, out Vector3 position)
+        {
+            foreach (var site in constructionSites)
+            {
+                if (site.need != need) continue;
+                position = SitePoint(site, 0f);
+                return true;
+            }
+            position = default;
+            return false;
+        }
+
         bool HasBuilding(Need need)
         {
             foreach (var building in m_Buildings)
