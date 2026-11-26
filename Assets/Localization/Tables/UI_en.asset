@@ -190,6 +190,70 @@ MonoBehaviour:
     m_Localized: 'Next wave: {0}'
     m_Metadata:
       m_Items: []
+  - m_Id: 5237297274884136
+    m_Localized: Wave {0} Complete
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884137
+    m_Localized: A good start. The next wave will go even better.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884138
+    m_Localized: Nice work! A few tweaks and your resort will shine.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884139
+    m_Localized: Great wave! Your guests loved it.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884140
+    m_Localized: Perfect wave! Every single guest is happy.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884141
+    m_Localized: Guests served
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884142
+    m_Localized: Wave Satisfaction
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884143
+    m_Localized: Rewards
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884144
+    m_Localized: What went well
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884145
+    m_Localized: Needs improvement
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884146
+    m_Localized: All {0} guests were served
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884147
+    m_Localized: "{0}: guests were served quickly"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884148
+    m_Localized: "{0}: the queue grew for {1} s"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884149
+    m_Localized: "{0}: guests waited a bit too long"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884150
+    m_Localized: Nothing to fix. Well done!
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884151
+    m_Localized: Claim Rewards
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []
