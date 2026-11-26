@@ -99,6 +99,10 @@ MonoBehaviour:
     m_Key: economy.missing_coins
     m_Metadata:
       m_Items: []
+  - m_Id: 10204864056446977
+    m_Key: wave.forecast
+    m_Metadata:
+      m_Items: []
   m_Metadata:
     m_Items: []
   m_KeyGenerator:

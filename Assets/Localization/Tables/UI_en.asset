@@ -102,6 +102,10 @@ MonoBehaviour:
     m_Localized: 'Missing: {0} Coins'
     m_Metadata:
       m_Items: []
+  - m_Id: 10204864056446977
+    m_Localized: 'Next wave: {0}'
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

@@ -1166,6 +1166,7 @@ GameObject:
   - component: {fileID: 2300000002}
   - component: {fileID: 2300000003}
   - component: {fileID: 2300000004}
+  - component: {fileID: 2300000005}
   m_Layer: 0
   m_Name: StartWave
   m_TagString: Untagged
@@ -1220,6 +1221,22 @@ MonoBehaviour:
   ship: {fileID: 0}
   sailFrom: {x: -17, y: -0.8, z: -9}
   dockAt: {x: -6.6, y: -0.8, z: -6.2}
+--- !u!114 &2300000005
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2300000001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5cb00fe26aca4709b99dda2a256583f4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Multikulti.UI.WaveForecastPanel
+  waveLoop: {fileID: 2100000003}
+  fontSize: 30
+  margin: 48
+  aboveButton: 136
 --- !u!1 &2400000001
 GameObject:
   m_ObjectHideFlags: 0
