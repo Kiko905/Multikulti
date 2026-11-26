@@ -251,6 +251,38 @@ MonoBehaviour:
     m_Key: wave_complete.claim
     m_Metadata:
       m_Items: []
+  - m_Id: 5237297274884152
+    m_Key: upgrade.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884153
+    m_Key: upgrade.reason
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884154
+    m_Key: upgrade.seats
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884155
+    m_Key: upgrade.level
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884156
+    m_Key: upgrade.hint
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884157
+    m_Key: upgrade.cost
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884158
+    m_Key: upgrade.upgrade_now
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884159
+    m_Key: upgrade.later
+    m_Metadata:
+      m_Items: []
   m_Metadata:
     m_Items: []
   m_KeyGenerator:

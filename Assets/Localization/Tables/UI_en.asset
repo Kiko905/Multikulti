@@ -254,6 +254,38 @@ MonoBehaviour:
     m_Localized: Claim Rewards
     m_Metadata:
       m_Items: []
+  - m_Id: 5237297274884152
+    m_Localized: Recommended Upgrade
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884153
+    m_Localized: Guests queued at the {0} for {1} s
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884154
+    m_Localized: Seats {0} → {1}
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884155
+    m_Localized: Level {0} → {1}
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884156
+    m_Localized: More seats, shorter queues. Service speed stays the same.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884157
+    m_Localized: 'Cost: {0} Coins'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884158
+    m_Localized: Upgrade Now
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884159
+    m_Localized: Later
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []
