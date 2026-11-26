@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Multikulti.Buildings;
 using Multikulti.Config;
 using Multikulti.Diagnostics;
+using Multikulti.Economy;
 using Multikulti.Unlocks;
 using Multikulti.Workers;
 using UnityEngine;
@@ -47,6 +48,10 @@ namespace Multikulti.Waves
     /// the timers and buildings continue and the save is deleted. If the app is closed while paused, the next
     /// start finds the save, restores the wave into WavePaused and resumes it exactly where it stopped.
     ///
+    /// Reward (SCRUM-45; activity diagram "Vypočítať rating" → "Zobrať odmenu"): VypocitatRating also calculates
+    /// the Coins and Energy of the wave into Hodnotenie; when the player takes the reward (Claim, WaveComplete → Upgrade)
+    /// ZobratOdmenu credits them to ResortBalances, exactly once per wave.
+    ///
     /// LOCKED needs (SCRUM-34): a need whose building is not bought yet (Pool → Relax, Bungalows → Ocean View)
     /// gets demand 0 on Start Wave, so it releases no units. Buying is possible only between waves,
     /// so a need stays locked or unlocked for the whole wave.
@@ -57,6 +62,8 @@ namespace Multikulti.Waves
         [SerializeField] WorkerManager workers;
         [SerializeField, Tooltip("Area unlocks (SCRUM-34); found in the scene when empty.")]
         AreaUnlockService unlocks;
+        [SerializeField, Tooltip("Coins and Energy of the player (SCRUM-45); found in the scene when empty.")]
+        ResortBalances balances;
 
         float m_StateTime;
         float m_WaveTime;
@@ -68,6 +75,7 @@ namespace Multikulti.Waves
         readonly Dictionary<BuildingQueue, (int Arrived, int Served)> m_CountsAtWaveStart =
             new Dictionary<BuildingQueue, (int Arrived, int Served)>();
         bool m_RushDone;
+        bool m_RewardTaken;
         readonly HashSet<Need> m_MissingBuildings = new HashSet<Need>();
         readonly DemandRelease m_Release = new DemandRelease();
         readonly WaveWaitLog m_Waits = new WaveWaitLog();
@@ -139,6 +147,9 @@ namespace Multikulti.Waves
         /// <summary>Raised right after the wave is rated, for "Zobraziť hodnotenie vlny" (Wave Complete screen).</summary>
         public event Action<HodnotenieVlny> WaveRated;
 
+        /// <summary>Raised when the player took the reward of the wave ("Zobrať odmenu", SCRUM-45).</summary>
+        public event Action<HodnotenieVlny> RewardTaken;
+
         /// <summary>Seconds from the end of arrival until every building served all units (drain_s in playtest metrics).</summary>
         public float DrainSeconds => m_DrainTime;
 
@@ -164,6 +175,10 @@ namespace Multikulti.Waves
         {
             if (unlocks == null)
                 unlocks = FindAnyObjectByType<AreaUnlockService>();
+            if (balances == null)
+                balances = FindAnyObjectByType<ResortBalances>();
+            if (balances == null)
+                Debug.LogWarning("WaveLoop: no ResortBalances in the scene, wave rewards are not credited.", this);
             Machine = new WaveStateMachine(WaveConfig.Current.Waves.Count);
             Machine.StateChanged += OnStateChanged;
             ReportState();
@@ -318,6 +333,7 @@ namespace Multikulti.Waves
                 m_DrainTime = 0f;
                 m_ArrivalClosed = false;
                 m_RushDone = false;
+                m_RewardTaken = false;
                 SuddenRushBuilding = null;
                 m_Release.Begin(CurrentWave(), WaveTimer, IsNeedLocked);
                 LogLockedNeeds();
@@ -341,6 +357,10 @@ namespace Multikulti.Waves
             // State diagram "Vlna dokončená": entry / VypocitatRating (SCRUM-44).
             if (next == WaveState.WaveResolving)
                 VypocitatRating();
+
+            // Activity "Zobrať odmenu": the player tapped Claim on the result screen (SCRUM-45).
+            if (previous == WaveState.WaveComplete && next == WaveState.Upgrade)
+                ZobratOdmenu();
 
             ReportState();
             Debug.Log($"Wave {Machine.Wave}: {previous.ToJiraName()} → {next.ToJiraName()}");
@@ -450,9 +470,53 @@ namespace Multikulti.Waves
         {
             var satisfaction = VypocitatSpokojnostHosti();
             var rating = HodnotenieVlny.RatingFor(satisfaction.Value, WaveConfig.Current.Satisfaction.RatingThresholds);
-            Hodnotenie = new HodnotenieVlny(Machine.Wave, satisfaction, rating);
-            Debug.Log($"Wave {Machine.Wave}: rating {Hodnotenie.RatingLabel} (Wave Satisfaction {satisfaction.Value:P0})");
+            var rewards = WaveConfig.Current.Rewards;
+            var units = UnitsOfWave();
+            var coins = HodnotenieVlny.CoinsFor(units, rewards.CoinsPerUnit, rewards.RatingCoinMultipliers, rating);
+            var energy = HodnotenieVlny.EnergyFor(rewards.EnergyPerRating, rating);
+            Hodnotenie = new HodnotenieVlny(Machine.Wave, satisfaction, rating, units, coins, energy);
+            Debug.Log($"Wave {Machine.Wave}: rating {Hodnotenie.RatingLabel} (Wave Satisfaction {satisfaction.Value:P0}), " +
+                      $"reward {coins} Coins ({units} units × {rewards.CoinsPerUnit:0.##} × " +
+                      $"{Multiplier(rewards, rating):0.##}) and {energy} Energy");
             WaveRated?.Invoke(Hodnotenie);
+        }
+
+        /// <summary>
+        /// Activity "Zobrať odmenu" (SCRUM-45): credits the Coins and Energy of the rated wave to the player.
+        /// Runs once per wave; without a rating or ResortBalances nothing is credited.
+        /// </summary>
+        void ZobratOdmenu()
+        {
+            if (m_RewardTaken || Hodnotenie == null) return;
+            m_RewardTaken = true;
+            if (balances == null)
+            {
+                Debug.LogWarning($"Wave {Machine.Wave}: no ResortBalances, the reward of {Hodnotenie.Coins} Coins " +
+                                 $"and {Hodnotenie.Energy} Energy is lost.", this);
+                return;
+            }
+
+            balances.CoinWallet.Add(Hodnotenie.Coins, $"wave {Hodnotenie.Wave} {Hodnotenie.RatingLabel}");
+            balances.EnergyWallet.Add(Hodnotenie.Energy, $"wave {Hodnotenie.Wave} {Hodnotenie.RatingLabel}");
+            Debug.Log($"Wave {Machine.Wave}: reward taken, +{Hodnotenie.Coins} Coins, +{Hodnotenie.Energy} Energy " +
+                      $"(now {balances.Coins} Coins, {balances.Energy} Energy)");
+            RewardTaken?.Invoke(Hodnotenie);
+        }
+
+        /// <summary>All units of the current wave, Sudden rush included: the volume the reward is counted from.</summary>
+        int UnitsOfWave()
+        {
+            var units = 0;
+            foreach (Need need in Enum.GetValues(typeof(Need)))
+                units += m_Release.Demand(need);
+            return units;
+        }
+
+        static float Multiplier(RewardSettings rewards, WaveRating rating)
+        {
+            var index = (int)rating - 1;
+            var multipliers = rewards.RatingCoinMultipliers;
+            return index >= 0 && index < multipliers.Count ? multipliers[index] : 0f;
         }
 
         /// <summary>
