@@ -17,6 +17,10 @@ namespace Multikulti.Diagnostics
     {
         public const string FolderName = "playtest";
 
+        // Without a byte order mark: with Encoding.UTF8 the first line of every file started with a BOM
+        // and json.loads in tools/playtest_report.py could not read it (session_started was lost).
+        static readonly Encoding k_Utf8NoBom = new UTF8Encoding(false);
+
         static string s_FilePath;
         static float s_SessionStart;
         static bool s_Failed;
@@ -116,7 +120,7 @@ namespace Multikulti.Diagnostics
                     .Field("t", Time.realtimeSinceStartup - s_SessionStart)
                     .Field("ts", DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture));
 
-                File.AppendAllText(s_FilePath, fields(writer).ToJson() + "\n", Encoding.UTF8);
+                File.AppendAllText(s_FilePath, fields(writer).ToJson() + "\n", k_Utf8NoBom);
             }
             catch (Exception exception)
             {

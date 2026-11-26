@@ -1044,6 +1044,7 @@ GameObject:
   - component: {fileID: 2100000003}
   - component: {fileID: 2100000004}
   - component: {fileID: 2100000005}
+  - component: {fileID: 2100000006}
   m_Layer: 0
   m_Name: WaveLoop
   m_TagString: Untagged
@@ -1106,6 +1107,23 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Multikulti.Waves.NeedStateBoard
   waveLoop: {fileID: 2100000003}
   workers: {fileID: 1945898636}
+--- !u!114 &2100000006
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2100000001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9174d6cb78544542911807ff1d842efc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Multikulti.Diagnostics.PlaytestMetricsRecorder
+  waveLoop: {fileID: 2100000003}
+  workers: {fileID: 1945898636}
+  needStates: {fileID: 2100000005}
+  upgrades: {fileID: 0}
+  unlocks: {fileID: 0}
 --- !u!1 &2200000001
 GameObject:
   m_ObjectHideFlags: 0
