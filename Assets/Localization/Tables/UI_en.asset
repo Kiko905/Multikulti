@@ -290,6 +290,18 @@ MonoBehaviour:
     m_Localized: Resort Value +{0}
     m_Metadata:
       m_Items: []
+  - m_Id: 5237297274884161
+    m_Localized: Every guest leaves happy.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884162
+    m_Localized: 1 guest ran out of patience and left early.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884163
+    m_Localized: '{0} guests ran out of patience and left early.'
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

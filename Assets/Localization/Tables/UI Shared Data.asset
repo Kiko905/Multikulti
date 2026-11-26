@@ -287,6 +287,18 @@ MonoBehaviour:
     m_Key: upgrade.resort_value
     m_Metadata:
       m_Items: []
+  - m_Id: 5237297274884161
+    m_Key: wave_complete.departure.none
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884162
+    m_Key: wave_complete.departure.one
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884163
+    m_Key: wave_complete.departure.some
+    m_Metadata:
+      m_Items: []
   m_Metadata:
     m_Items: []
   m_KeyGenerator:

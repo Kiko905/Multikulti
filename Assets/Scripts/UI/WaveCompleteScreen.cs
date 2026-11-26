@@ -25,6 +25,9 @@ namespace Multikulti.UI
     ///   one on top, so it matches the upgrade S5 recommends (SCRUM-48). LongestBottleneck gives that need.
     /// - Never a punishing tone: the worst result is 1★ with non-zero Coins, the subtitle is "you can do better",
     ///   and What went well always has at least the served guests.
+    /// - Guest departure (SCRUM-47): a short picture of how the resort did — a row of guest figures, of which those who
+    ///   ran out of patience walk off and fade (GuestDepartureRules: 5★ nobody, 1★ a visible group). Nobody leaves
+    ///   during the wave, and the departure has no effect on the next wave or the rewards.
     /// - Template for S8 VIP Complete as well (UI handoff §F.3): the content is a list of tiles and two lists,
     ///   the accent colour and the title belong to the result, so a VIP variant only changes the style.
     ///
@@ -50,6 +53,9 @@ namespace Multikulti.UI
         const string WaitedLongKey = "wave_complete.improve.slow";
         const string NothingToImproveKey = "wave_complete.improve.none";
         const string ClaimKey = "wave_complete.claim";
+        const string DepartureNoneKey = "wave_complete.departure.none";
+        const string DepartureOneKey = "wave_complete.departure.one";
+        const string DepartureSomeKey = "wave_complete.departure.some";
         const string CoinsKey = "home.coins";
         const string EnergyKey = "home.energy";
         const string ResortValueKey = "home.resort_value";
@@ -64,6 +70,13 @@ namespace Multikulti.UI
         const float PanelWidth = 1240f;
         const float StarSize = 76f;
         const int MaxLines = 5;
+        const float FigureWidth = 34f;
+        const float FigureHeight = 55f;
+        const float FigureSpacing = 10f;
+        const float WalkDistance = 150f;
+        const float WalkDelay = 0.6f;
+        const float WalkSeconds = 1.4f;
+        const float WalkStagger = 0.2f;
 
         /// <summary>A need served at least as well as the 4★ threshold counts as "went well".</summary>
         const int WentWellThresholdIndex = 3;
@@ -83,8 +96,10 @@ namespace Multikulti.UI
         static readonly Color k_EnergyColor = new Color(0.45f, 0.85f, 1f);
         static readonly Color k_ResortValueColor = new Color(0.75f, 0.6f, 1f);
         static readonly Color k_ClaimColor = new Color(1f, 0.8f, 0.25f);
+        static readonly Color k_GuestColor = new Color(1f, 1f, 1f, 0.85f);
 
         static Sprite s_Star;
+        static Sprite s_Guest;
 
         [SerializeField] WaveLoop waveLoop;
         [SerializeField] ResortBalances balances;
@@ -127,8 +142,12 @@ namespace Multikulti.UI
         readonly Text[] m_ImproveLines = new Text[MaxLines];
         Button m_ClaimButton;
         Text m_ClaimText;
+        readonly Image[] m_Guests = new Image[GuestDepartureRules.Figures];
+        Text m_Departure;
 
         HodnotenieVlny m_Shown;
+        int m_Leaving;
+        float m_DepartureTime;
         int m_ResortValueAtStart;
         bool m_Dirty;
 
@@ -169,6 +188,17 @@ namespace Multikulti.UI
             m_ResortValueTile.activeSelf ? m_ResortValueValue.text : string.Empty,
             m_WentWellHeader.text, m_NeedsImprovementHeader.text, m_ClaimText.text
         };
+
+        /// <summary>Guest figures that leave on the screen (SCRUM-47, for tests).</summary>
+        public int LeavingGuests => IsVisible ? m_Leaving : 0;
+
+        /// <summary>Line under the guest figures (SCRUM-47, for tests).</summary>
+        public string DepartureText => m_Departure != null ? m_Departure.text : string.Empty;
+
+        /// <summary>True once every leaving figure has walked off (for tests).</summary>
+        public bool DepartureFinished => m_DepartureTime >= DepartureDuration;
+
+        static float DepartureDuration => WalkDelay + WalkSeconds + WalkStagger * (GuestDepartureRules.MaxLeaving - 1);
 
         /// <summary>Resort Value gained since Start Wave; the tile is shown only when it is above 0.</summary>
         public int ResortValueGain => balances != null ? Mathf.Max(0, balances.ResortValue - m_ResortValueAtStart) : 0;
@@ -224,7 +254,8 @@ namespace Multikulti.UI
                      {
                          TitleKey, ToneLowKey, ToneMidKey, ToneHighKey, TonePerfectKey, GuestsKey, SatisfactionKey,
                          RewardsKey, WentWellKey, NeedsImprovementKey, AllServedKey, ServedQuicklyKey, QueueGrewKey,
-                         WaitedLongKey, NothingToImproveKey, ClaimKey, CoinsKey, EnergyKey, ResortValueKey
+                         WaitedLongKey, NothingToImproveKey, ClaimKey, DepartureNoneKey, DepartureOneKey,
+                         DepartureSomeKey, CoinsKey, EnergyKey, ResortValueKey
                      })
                 Listen(key);
             foreach (Need need in Enum.GetValues(typeof(Need)))
@@ -270,8 +301,14 @@ namespace Multikulti.UI
         void LateUpdate()
         {
             ApplySafeArea();
-            if (IsVisible && m_Dirty && m_Shown != null)
+            if (!IsVisible || m_Shown == null) return;
+            if (m_Dirty)
                 Fill(m_Shown);
+            if (m_DepartureTime < DepartureDuration)
+            {
+                m_DepartureTime += Time.unscaledDeltaTime;
+                AnimateGuests();
+            }
         }
 
         void OnWaveStateChanged(WaveState previous, WaveState next)
@@ -334,6 +371,7 @@ namespace Multikulti.UI
             }
 
             m_Shown = result;
+            m_DepartureTime = 0f;
             Fill(result);
             m_Root.SetActive(true);
         }
@@ -392,6 +430,47 @@ namespace Multikulti.UI
             ShowLines(m_ImproveLines, m_NeedsImprovement);
 
             m_ClaimText.text = Text(ClaimKey);
+
+            var thresholds = WaveConfig.Current.Satisfaction.RatingThresholds;
+            var happyFrom = thresholds.Count > 4 ? thresholds[4] : 0.9f;
+            m_Leaving = GuestDepartureRules.Leaving(result.Satisfaction.Value, happyFrom,
+                WaveConfig.Current.Satisfaction.WaveFloor);
+            m_Departure.text = m_Leaving == 0 ? Text(DepartureNoneKey)
+                : m_Leaving == 1 ? Text(DepartureOneKey)
+                : Format(Text(DepartureSomeKey), m_Leaving.ToString(CultureInfo.InvariantCulture));
+            AnimateGuests();
+        }
+
+        static float FigureX(int index) =>
+            (index - (GuestDepartureRules.Figures - 1) * 0.5f) * (FigureWidth + FigureSpacing);
+
+        /// <summary>
+        /// The leaving guests are the rightmost ones and walk off to the right one after another, fading out;
+        /// the rest stays. Unscaled time: the picture does not depend on the game speed.
+        /// </summary>
+        void AnimateGuests()
+        {
+            var firstLeaving = m_Guests.Length - m_Leaving;
+            for (var i = 0; i < m_Guests.Length; i++)
+            {
+                var guest = m_Guests[i];
+                if (i < firstLeaving)
+                {
+                    guest.color = k_GuestColor;
+                    guest.rectTransform.anchoredPosition = new Vector2(FigureX(i), 0f);
+                    continue;
+                }
+
+                // The one nearest the edge goes first.
+                var order = m_Guests.Length - 1 - i;
+                var t = Mathf.Clamp01((m_DepartureTime - WalkDelay - order * WalkStagger) / WalkSeconds);
+                var walked = Mathf.SmoothStep(0f, 1f, t);
+                var step = t > 0f && t < 1f ? Mathf.Abs(Mathf.Sin(t * Mathf.PI * 5f)) * 4f : 0f;
+                guest.rectTransform.anchoredPosition = new Vector2(FigureX(i) + walked * WalkDistance, step);
+                var color = k_ImproveColor;
+                color.a = k_GuestColor.a * (1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.35f, 1f, t)));
+                guest.color = color;
+            }
         }
 
         /// <summary>
@@ -575,6 +654,21 @@ namespace Multikulti.UI
             }
             m_Tone = CreateText("Tone", header, ToneSize, FontStyle.Italic, k_MutedColor, TextAnchor.MiddleCenter);
 
+            // Guest departure (SCRUM-47): the figures are placed by hand so the leaving ones can walk off.
+            var guests = CreateRect("Guests", header);
+            Fixed(guests, FigureHeight + 10f);
+            for (var i = 0; i < m_Guests.Length; i++)
+            {
+                var guest = CreateRect("Guest " + (i + 1), guests);
+                guest.anchorMin = guest.anchorMax = guest.pivot = new Vector2(0.5f, 0.5f);
+                guest.sizeDelta = new Vector2(FigureWidth, FigureHeight);
+                guest.anchoredPosition = new Vector2(FigureX(i), 0f);
+                m_Guests[i] = guest.gameObject.AddComponent<Image>();
+                m_Guests[i].sprite = Guest();
+                m_Guests[i].raycastTarget = false;
+            }
+            m_Departure = CreateText("Departure", header, LineSize, FontStyle.Normal, k_MutedColor, TextAnchor.MiddleCenter);
+
             // Result tiles: Guests served and Wave Satisfaction (the first time the number is shown).
             var stats = Row("Stats", panel, new RectOffset(48, 48, 18, 0));
             CreateTile(stats, "Guests Served", k_TextColor, out m_GuestsValue, out m_GuestsLabel);
@@ -737,6 +831,46 @@ namespace Multikulti.UI
             s_Star = Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), size);
             s_Star.name = "Star";
             return s_Star;
+        }
+
+        /// <summary>Graybox guest figure (head and body) drawn once at runtime, like the star.</summary>
+        static Sprite Guest()
+        {
+            if (s_Guest != null) return s_Guest;
+
+            const int width = 64;
+            const int height = 104;
+            const int samples = 4;
+            var head = new Vector2(0.5f, 0.82f);
+            const float headRadius = 0.25f; // in texture widths
+            var body = new Vector2(0.5f, 0.3f);
+            var bodyRadius = new Vector2(0.44f, 0.34f);
+
+            var texture = new Texture2D(width, height, TextureFormat.RGBA32, false) { name = "Guest", wrapMode = TextureWrapMode.Clamp };
+            var pixels = new Color32[width * height];
+            for (var y = 0; y < height; y++)
+            for (var x = 0; x < width; x++)
+            {
+                var inside = 0;
+                for (var sy = 0; sy < samples; sy++)
+                for (var sx = 0; sx < samples; sx++)
+                {
+                    // Normalised so the head stays round on the tall texture.
+                    var px = (x + (sx + 0.5f) / samples) / width;
+                    var py = (y + (sy + 0.5f) / samples) / height;
+                    var toHead = new Vector2(px - head.x, (py - head.y) * height / width);
+                    var toBody = new Vector2((px - body.x) / bodyRadius.x, (py - body.y) / bodyRadius.y);
+                    // The body is an ellipse cut flat at the feet.
+                    if (toHead.magnitude <= headRadius || (toBody.sqrMagnitude <= 1f && py >= 0.02f))
+                        inside++;
+                }
+                pixels[y * width + x] = new Color32(255, 255, 255, (byte)(255 * inside / (samples * samples)));
+            }
+            texture.SetPixels32(pixels);
+            texture.Apply(false, true);
+            s_Guest = Sprite.Create(texture, new Rect(0, 0, width, height), new Vector2(0.5f, 0.5f), height);
+            s_Guest.name = "Guest";
+            return s_Guest;
         }
 
         static bool Inside(Vector2[] polygon, Vector2 point)
