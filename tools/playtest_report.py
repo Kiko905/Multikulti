@@ -38,7 +38,8 @@ def load_events(paths):
         files += sorted(p.rglob("*.jsonl")) if p.is_dir() else [p]
     events, bad = [], 0
     for f in files:
-        for line in f.read_text(encoding="utf-8").splitlines():
+        # utf-8-sig: subory zo starsich buildov maju na zaciatku BOM
+        for line in f.read_text(encoding="utf-8-sig").splitlines():
             if not line.strip():
                 continue
             try:

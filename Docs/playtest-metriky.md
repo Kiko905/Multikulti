@@ -35,6 +35,20 @@ Názvy budov, needov a stavov podľa `Docs/Slovnik.md` (`BeachBar`, `Drinks`, �
 
 Začiatok session, pauza aplikácie a koniec sa zapisujú samé.
 
+## Napojenie na hru (SCRUM-103)
+
+Udalosti zapisuje komponent `PlaytestMetricsRecorder` (`Assets/Scripts/Diagnostics/PlaytestMetricsRecorder.cs`, v scéne na objekte `WaveLoop`). Len počúva udalosti hry, nič v nej nemení:
+
+| Udalosť | Kedy sa zapíše |
+|---|---|
+| `wave_started` | Start Wave (volá `WaveLoop`) |
+| `worker_moved` | každý presun Worker-a hráčom (nový Worker, ktorý príde s Poolom / Bungalows, sa nepočíta); `pre_wave` v `AwaitingWave` nesie číslo vlny, ktorá príde, `in_wave` číslo bežiacej vlny |
+| `bottleneck_shown` | need prejde do `BOTTLENECK` (ukáže sa warning a toast) |
+| `wave_completed` | `WAVE_COMPLETE`: rating, Wave Satisfaction, dobeh (`drain_s`) a dĺžka vlny bez pauzy (`duration_s`) |
+| `upgrade_offered` | `UPGRADE`: odporúčaný upgrade podľa AC6 = budova needu, ktorý bol vo vlne najdlhšie v `BOTTLENECK`; po vlne bez bottlenecku alebo pri max leveli sa nič neponúka |
+| `upgrade_bought`, `area_unlock_bought` | kúpa upgradu / Pool, Bungalows; `wave` = posledná dokončená vlna |
+
+
 ## Zber dát po playteste
 
 Súbory sú v priečinku `playtest` v `Application.persistentDataPath`:
