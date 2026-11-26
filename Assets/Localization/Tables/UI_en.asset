@@ -286,6 +286,10 @@ MonoBehaviour:
     m_Localized: Later
     m_Metadata:
       m_Items: []
+  - m_Id: 5237297274884160
+    m_Localized: Resort Value +{0}
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

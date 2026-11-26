@@ -283,6 +283,10 @@ MonoBehaviour:
     m_Key: upgrade.later
     m_Metadata:
       m_Items: []
+  - m_Id: 5237297274884160
+    m_Key: upgrade.resort_value
+    m_Metadata:
+      m_Items: []
   m_Metadata:
     m_Items: []
   m_KeyGenerator:

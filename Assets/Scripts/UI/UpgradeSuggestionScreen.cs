@@ -23,8 +23,8 @@ namespace Multikulti.UI
     ///   (WaveCompleteScreen.LongestBottleneck, the top line of Needs improvement on S4). PlaytestMetricsRecorder
     ///   writes upgrade_offered for the same building.
     /// - Shows the reason (how long the queue grew), before/after in seats ("Seats 3 → 5", the only thing an upgrade
-    ///   changes in the prototype), the price in Coins. Not affordable: Upgrade Now is not active and the screen shows
-    ///   "Missing: … Coins".
+    ///   changes in the prototype), the price in Coins and the Resort Value gain (SCRUM-56).
+    ///   Not affordable: Upgrade Now is not active and the screen shows "Missing: … Coins".
     /// - CTA Upgrade Now buys the upgrade through UpgradeService, Later skips it; both end the Upgrade state
     ///   (Machine.FinishUpgrade, Upgrade → AwaitingWave), so S9 Area Unlock can follow and then S1.
     /// - Nothing to suggest (no bottleneck in the wave, or that building is already at max level): S5 is skipped
@@ -43,6 +43,7 @@ namespace Multikulti.UI
         const string LevelKey = "upgrade.level";
         const string HintKey = "upgrade.hint";
         const string CostKey = "upgrade.cost";
+        const string ResortValueKey = "upgrade.resort_value";
         const string UpgradeNowKey = "upgrade.upgrade_now";
         const string LaterKey = "upgrade.later";
         const string MissingKey = "economy.missing_coins";
@@ -65,6 +66,7 @@ namespace Multikulti.UI
         static readonly Color k_SeatColor = new Color(1f, 1f, 1f, 0.85f);
         static readonly Color k_EmptySeatColor = new Color(1f, 1f, 1f, 0.12f);
         static readonly Color k_MissingColor = new Color(1f, 0.45f, 0.4f);
+        static readonly Color k_ResortValueColor = new Color(0.75f, 0.6f, 1f);
         static readonly Color k_LaterColor = new Color(1f, 1f, 1f, 0.12f);
         static readonly Color k_DisabledColor = new Color(0.35f, 0.37f, 0.4f);
 
@@ -72,6 +74,7 @@ namespace Multikulti.UI
         [SerializeField] WaveLoop waveLoop;
         [SerializeField] WorkerManager workers;
         [SerializeField] ResortBalances balances;
+        [SerializeField] ResortValueService resortValue;
         [SerializeField] WaveCompleteScreen results;
 
         readonly Dictionary<string, string> m_Texts = new Dictionary<string, string>();
@@ -92,6 +95,7 @@ namespace Multikulti.UI
         Text m_Level;
         Text m_Hint;
         Text m_Cost;
+        Text m_ResortValue;
         Text m_Missing;
         Button m_UpgradeButton;
         Image m_UpgradeImage;
@@ -132,6 +136,7 @@ namespace Multikulti.UI
         public string[] VisibleTexts => new[]
         {
             m_Title.text, m_Building.text, m_Reason.text, m_SeatsText.text, m_Level.text, m_Hint.text, m_Cost.text,
+            m_ResortValue.gameObject.activeSelf ? m_ResortValue.text : string.Empty,
             m_Missing.gameObject.activeSelf ? m_Missing.text : string.Empty, m_UpgradeText.text, m_LaterText.text
         };
 
@@ -160,7 +165,7 @@ namespace Multikulti.UI
             EnsureEventSystem();
             BuildCanvas();
 
-            foreach (var key in new[] { TitleKey, ReasonKey, SeatsKey, LevelKey, HintKey, CostKey, UpgradeNowKey, LaterKey, MissingKey })
+            foreach (var key in new[] { TitleKey, ReasonKey, SeatsKey, LevelKey, HintKey, CostKey, ResortValueKey, UpgradeNowKey, LaterKey, MissingKey })
                 Listen(key);
             foreach (Need need in Enum.GetValues(typeof(Need)))
                 Listen(HomeHud.BuildingKey(need));
@@ -171,6 +176,8 @@ namespace Multikulti.UI
         {
             if (results == null)
                 results = FindAnyObjectByType<WaveCompleteScreen>();
+            if (resortValue == null)
+                resortValue = FindAnyObjectByType<ResortValueService>();
             if (upgrades == null || waveLoop == null || waveLoop.Machine == null)
             {
                 Debug.LogWarning("Upgrade Suggestion screen: no UpgradeService or WaveLoop in the scene.", this);
@@ -309,6 +316,10 @@ namespace Multikulti.UI
             ShowSeats(now, after, max);
 
             m_Cost.text = Format(Text(CostKey), Amount(upgrades.PriceOf(building)));
+            // Resort Value gain (UI handoff S5, SCRUM-56): what the upgrade adds to the status of the resort.
+            var gain = resortValue != null ? resortValue.UpgradeGain(building) : 0;
+            m_ResortValue.text = Format(Text(ResortValueKey), Amount(gain));
+            m_ResortValue.gameObject.SetActive(gain > 0);
             var missing = upgrades.MissingCoins(building);
             m_Missing.text = Format(Text(MissingKey), Amount(missing));
             m_Missing.gameObject.SetActive(missing > 0);
@@ -453,6 +464,7 @@ namespace Multikulti.UI
             m_Hint = CreateText("Hint", body, BodySize - 4, FontStyle.Italic, k_MutedColor, TextAnchor.MiddleCenter);
             Spacer(body, 12f);
             m_Cost = CreateText("Cost", body, BodySize + 4, FontStyle.Bold, k_TextColor, TextAnchor.MiddleCenter);
+            m_ResortValue = CreateText("Resort Value", body, BodySize, FontStyle.Bold, k_ResortValueColor, TextAnchor.MiddleCenter);
             m_Missing = CreateText("Missing", body, BodySize, FontStyle.Bold, k_MissingColor, TextAnchor.MiddleCenter);
 
             var buttons = CreateRect("Buttons", panel);
