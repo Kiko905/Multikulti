@@ -102,6 +102,90 @@ MonoBehaviour:
     m_Localized: 'Missing: {0} Coins'
     m_Metadata:
       m_Items: []
+  - m_Id: 5237297274884115
+    m_Localized: queue growing
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884116
+    m_Localized: catching up
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884117
+    m_Localized: '{0} queue growing'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884118
+    m_Localized: '{0} is catching up'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884119
+    m_Localized: Check-in takes a bit too long.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884120
+    m_Localized: Drinks take a bit too long.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884121
+    m_Localized: Food takes a bit too long.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884122
+    m_Localized: No free sunbed at the pool.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884123
+    m_Localized: Still waiting for my bungalow.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884124
+    m_Localized: That's more like it!
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884125
+    m_Localized: New Area Available
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884126
+    m_Localized: 'Adds: {0} demand'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884127
+    m_Localized: Higher satisfaction potential
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884128
+    m_Localized: 'Includes: 1 Worker'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884129
+    m_Localized: 'Cost: {0} Coins'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884130
+    m_Localized: Unlock
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884131
+    m_Localized: Later
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884132
+    m_Localized: Sunbeds, cool water and lazy afternoons.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884133
+    m_Localized: Bungalows right on the water, with a view.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884134
+    m_Localized: "+ {0} · {1} Coins"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884135
+    m_Localized: "{0} · after Wave {1}"
+    m_Metadata:
+      m_Items: []
   - m_Id: 10204864056446977
     m_Localized: 'Next wave: {0}'
     m_Metadata:

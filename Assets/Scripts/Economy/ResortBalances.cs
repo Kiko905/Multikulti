@@ -19,6 +19,7 @@ namespace Multikulti.Economy
         [SerializeField, Min(0), Tooltip("Status of the resort; it only grows.")]
         int resortValue;
         CurrencyWallet m_CoinWallet;
+        CurrencyWallet m_EnergyWallet;
 
         /// <summary>Raised after any balance changed.</summary>
         public event Action Changed;
@@ -38,10 +39,24 @@ namespace Multikulti.Economy
 
         public int Coins => CoinWallet.Balance;
 
+        /// <summary>Energy balance; spend it only through TrySpend, e.g. Energy boost Speed Up (SCRUM-57).</summary>
+        public CurrencyWallet EnergyWallet
+        {
+            get
+            {
+                if (m_EnergyWallet == null)
+                {
+                    m_EnergyWallet = new CurrencyWallet(Mathf.Max(0, energy));
+                    m_EnergyWallet.Changed += OnEnergyChanged;
+                }
+                return m_EnergyWallet;
+            }
+        }
+
         public int Energy
         {
-            get => energy;
-            set => Set(ref energy, Mathf.Max(0, value));
+            get => EnergyWallet.Balance;
+            set => SetBalance(EnergyWallet, Mathf.Max(0, value), "set");
         }
 
         /// <summary>Resort Value only grows (build document §5.5); a lower value is ignored with a warning.</summary>
@@ -74,16 +89,42 @@ namespace Multikulti.Economy
             Changed?.Invoke();
         }
 
+        void OnEnergyChanged(int oldBalance, int newBalance, string reason)
+        {
+            energy = newBalance;
+            if (Debug.isDebugBuild)
+                Debug.Log($"Energy {newBalance - oldBalance:+#;-#;0} ({reason}): {oldBalance} → {newBalance}", this);
+            Changed?.Invoke();
+        }
+
+        /// <summary>Moves a wallet to the given balance through Add or TrySpend, so its Changed event fires.</summary>
+        static void SetBalance(CurrencyWallet wallet, int value, string reason)
+        {
+            var delta = value - wallet.Balance;
+            if (delta > 0) wallet.Add(delta, reason);
+            else if (delta < 0) wallet.TrySpend(-delta, reason);
+        }
+
         void OnValidate()
         {
-            if (Application.isPlaying && m_CoinWallet != null && coins != m_CoinWallet.Balance)
+            if (!Application.isPlaying)
             {
-                var delta = coins - m_CoinWallet.Balance;
-                if (delta > 0) m_CoinWallet.Add(delta, "inspector");
-                else m_CoinWallet.TrySpend(-delta, "inspector");
+                Changed?.Invoke();
                 return;
             }
-            Changed?.Invoke();
+
+            var walletChanged = false;
+            if (m_CoinWallet != null && coins != m_CoinWallet.Balance)
+            {
+                SetBalance(m_CoinWallet, coins, "inspector");
+                walletChanged = true;
+            }
+            if (m_EnergyWallet != null && energy != m_EnergyWallet.Balance)
+            {
+                SetBalance(m_EnergyWallet, energy, "inspector");
+                walletChanged = true;
+            }
+            if (!walletChanged) Changed?.Invoke();
         }
     }
 }

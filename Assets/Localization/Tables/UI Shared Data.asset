@@ -99,6 +99,90 @@ MonoBehaviour:
     m_Key: economy.missing_coins
     m_Metadata:
       m_Items: []
+  - m_Id: 5237297274884115
+    m_Key: wave_needs.queue_growing
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884116
+    m_Key: wave_needs.catching_up
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884117
+    m_Key: toast.queue_growing
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884118
+    m_Key: toast.catching_up
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884119
+    m_Key: toast.guest.rooms
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884120
+    m_Key: toast.guest.drinks
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884121
+    m_Key: toast.guest.food
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884122
+    m_Key: toast.guest.relax
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884123
+    m_Key: toast.guest.ocean_view
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884124
+    m_Key: toast.guest.better
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884125
+    m_Key: area_unlock.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884126
+    m_Key: area_unlock.adds
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884127
+    m_Key: area_unlock.satisfaction
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884128
+    m_Key: area_unlock.includes_worker
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884129
+    m_Key: area_unlock.cost
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884130
+    m_Key: area_unlock.unlock
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884131
+    m_Key: area_unlock.later
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884132
+    m_Key: area_unlock.flavour.relax
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884133
+    m_Key: area_unlock.flavour.ocean_view
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884134
+    m_Key: site.available
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5237297274884135
+    m_Key: site.locked
+    m_Metadata:
+      m_Items: []
   - m_Id: 10204864056446977
     m_Key: wave.forecast
     m_Metadata:

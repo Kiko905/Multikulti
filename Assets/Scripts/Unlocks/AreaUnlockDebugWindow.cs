@@ -11,12 +11,15 @@ namespace Multikulti.Unlocks
         [SerializeField] ResortBalances balances;
 
         AreaUnlockService m_Service;
+        bool m_HasScreen;
 
         void Start()
         {
             m_Service = GetComponent<AreaUnlockService>();
             if (balances == null)
                 balances = FindAnyObjectByType<ResortBalances>();
+            // S9 lives in Multikulti.UI; found by name so the Unlocks code does not depend on the UI.
+            m_HasScreen = GetComponent("AreaUnlockScreen") != null;
         }
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
@@ -27,9 +30,14 @@ namespace Multikulti.Unlocks
             var scale = Screen.height / ReferenceHeight;
             GUI.matrix = Matrix4x4.Scale(new Vector3(scale, scale, 1f));
 
-            DrawSiteLabels(scale);
-            if (m_Service.Open.HasValue)
-                DrawWindow(m_Service.Open.Value, scale);
+            // With S9 (SCRUM-112) the HUD site markers show the state (SCRUM-102) and S9 is the purchase window;
+            // this debug window only stands in without it.
+            if (!m_HasScreen)
+            {
+                DrawSiteLabels(scale);
+                if (m_Service.Open.HasValue)
+                    DrawWindow(m_Service.Open.Value, scale);
+            }
 
             GUI.matrix = Matrix4x4.identity;
         }

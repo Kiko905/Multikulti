@@ -1,6 +1,7 @@
 using Multikulti.Buildings;
 using Multikulti.Waves;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 
 namespace Multikulti.Workers
@@ -18,6 +19,8 @@ namespace Multikulti.Workers
         {
             var pointer = Pointer.current;
             if (pointer == null || !pointer.press.wasPressedThisFrame) return;
+            // A tap on UI (e.g. the S9 Area Unlock modal, SCRUM-112) is not meant for the building under it.
+            if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject()) return;
 
             var camera = Camera.main;
             if (camera == null) return;

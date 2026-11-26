@@ -140,6 +140,13 @@ namespace Multikulti.Config
             RequireCount(problems, "buildings.upgrade_prices", buildings.UpgradePrices, buildings.CapacityByLevel.Count - 1);
             RequireNoPlaceholders(problems, "buildings.upgrade_prices", buildings.UpgradePrices);
 
+            // SCRUM-57: the boost costs Energy, lasts some seconds and shortens service_time (0 < multiplier < 1).
+            RequirePositive(problems, "speed_up.energy_cost", speed_up.EnergyCost);
+            RequirePositive(problems, "speed_up.duration_s", speed_up.DurationSeconds);
+            if (speed_up.ServiceTimeMultiplier <= 0f || speed_up.ServiceTimeMultiplier >= 1f)
+                problems.Add("speed_up.service_time_multiplier must be between 0 and 1.");
+            RequirePositive(problems, "speed_up.max_per_building_per_wave", speed_up.MaxPerBuildingPerWave);
+
             RequirePositive(problems, "unlocks.pool_price", unlocks.PoolPrice);
             RequirePositive(problems, "unlocks.bungalows_price", unlocks.BungalowsPrice);
 

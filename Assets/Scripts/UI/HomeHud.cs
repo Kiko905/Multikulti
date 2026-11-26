@@ -4,6 +4,7 @@ using System.Globalization;
 using Multikulti.Buildings;
 using Multikulti.Economy;
 using Multikulti.Island;
+using Multikulti.Unlocks;
 using Multikulti.Waves;
 using UnityEngine;
 using UnityEngine.Localization;
@@ -16,6 +17,11 @@ namespace Multikulti.UI
     /// - top bar: Resort Value at the top left, currency balances (Coins, Energy) at the top right;
     /// - resort status under the Resort Value (Ready for Guests, Wave in progress, …);
     /// - a name marker above every building and a "+" marker above every construction site of the IslandMap.
+    ///
+    /// Site markers show the state of the area unlock (SCRUM-102, UI handoff S1 and S9):
+    /// - locked: a muted marker that says what opens it ("Pool · after Wave 3");
+    /// - available: a marker in the accent colour of the area with the price ("+ Pool · 1,200 Coins"), which
+    ///   gently pulses while the site can be tapped (AwaitingWave); a tap opens S9 (AreaUnlockSiteInput).
     ///
     /// The currency row is a horizontal layout that grows to the left, so Gems, Materials and Reputation (MVP)
     /// are one more AddBalance each, without a new layout. The top bar stays within 140 reference pixels from
@@ -31,16 +37,25 @@ namespace Multikulti.UI
         const string ResortValueKey = "home.resort_value";
         const string CoinsKey = "home.coins";
         const string EnergyKey = "home.energy";
+        const string SiteAvailableKey = "site.available";
+        const string SiteLockedKey = "site.locked";
+        const float PulseSpeed = 3f;
+        const float PulseScale = 0.06f;
 
         static readonly Color k_PillColor = new Color(0f, 0f, 0f, 0.6f);
         static readonly Color k_LabelColor = new Color(1f, 1f, 1f, 0.75f);
         static readonly Color k_ValueColor = Color.white;
         static readonly Color k_SiteColor = new Color(1f, 1f, 1f, 0.85f);
         static readonly Color k_SiteTextColor = new Color(0.25f, 0.18f, 0.1f);
+        static readonly Color k_LockedSiteColor = new Color(0f, 0f, 0f, 0.45f);
+        static readonly Color k_LockedSiteTextColor = new Color(1f, 1f, 1f, 0.85f);
+        static readonly Color k_AvailableSiteTextColor = new Color(0.07f, 0.09f, 0.12f);
 
         [SerializeField] WaveLoop waveLoop;
         [SerializeField] IslandMap map;
         [SerializeField] ResortBalances balances;
+        [SerializeField, Tooltip("Empty = the AreaUnlockService in the scene. Without it site markers only say \"+ Pool\".")]
+        AreaUnlockService unlocks;
         [SerializeField, Min(8)] int fontSize = 30;
         [SerializeField, Min(0f), Tooltip("Distance of the top bar from the edges of the safe area.")]
         float margin = 32f;
@@ -60,6 +75,9 @@ namespace Multikulti.UI
             public bool IsSite;
             public Building Building;
             public Vector3 Point;
+            public Image Background;
+            public bool Pulse;
+            public AreaUnlockState? SiteState;
         }
 
         readonly Dictionary<string, string> m_Strings = new Dictionary<string, string>();
@@ -90,6 +108,8 @@ namespace Multikulti.UI
                 map = FindAnyObjectByType<IslandMap>();
             if (balances == null)
                 balances = FindAnyObjectByType<ResortBalances>();
+            if (unlocks == null)
+                unlocks = FindAnyObjectByType<AreaUnlockService>();
 
             m_Font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             BuildCanvas();
@@ -98,6 +118,8 @@ namespace Multikulti.UI
                 Localize(status.LabelKey());
             foreach (Need need in Enum.GetValues(typeof(Need)))
                 Localize(BuildingKey(need));
+            Localize(SiteAvailableKey);
+            Localize(SiteLockedKey);
         }
 
         void OnEnable()
@@ -106,6 +128,8 @@ namespace Multikulti.UI
                 balances.Changed += OnBalancesChanged;
             if (map != null)
                 map.Refreshed += RebuildMarkers;
+            if (unlocks != null)
+                unlocks.Changed += OnUnlocksChanged;
         }
 
         void OnDisable()
@@ -114,6 +138,26 @@ namespace Multikulti.UI
                 balances.Changed -= OnBalancesChanged;
             if (map != null)
                 map.Refreshed -= RebuildMarkers;
+            if (unlocks != null)
+                unlocks.Changed -= OnUnlocksChanged;
+        }
+
+        // The wave state changes which unlocks are available and whether a site can be tapped.
+        void OnUnlocksChanged() => m_TextsDirty = true;
+
+        /// <summary>State shown on the site marker of a need; null when there is no such marker (for tests).</summary>
+        public AreaUnlockState? SiteMarkerState(Need need, out string text, out bool pulse)
+        {
+            foreach (var marker in m_Markers)
+            {
+                if (!marker.IsSite || marker.Need != need) continue;
+                text = marker.Text.text;
+                pulse = marker.Pulse;
+                return marker.SiteState;
+            }
+            text = string.Empty;
+            pulse = false;
+            return null;
         }
 
         void Start()
@@ -166,7 +210,8 @@ namespace Multikulti.UI
 
         static string Format(int value) => value.ToString("N0", CultureInfo.InvariantCulture);
 
-        static string BuildingKey(Need need) => need switch
+        /// <summary>Localization key of the building name for a need (also used by GuestFeedbackToasts).</summary>
+        internal static string BuildingKey(Need need) => need switch
         {
             Need.Rooms => "building.rooms",
             Need.Drinks => "building.drinks",
@@ -201,7 +246,50 @@ namespace Multikulti.UI
             foreach (var marker in m_Markers)
             {
                 var name = Localized(BuildingKey(marker.Need));
-                marker.Text.text = marker.IsSite ? "+ " + name : name;
+                if (marker.IsSite)
+                    ApplySite(marker, name);
+                else
+                    marker.Text.text = name;
+            }
+        }
+
+        void ApplySite(Marker marker, string name)
+        {
+            if (unlocks == null || unlocks.Unlocks == null || !unlocks.Unlocks.TryGet(marker.Need, out var unlock))
+            {
+                marker.Text.text = "+ " + name;
+                return;
+            }
+
+            var state = unlocks.StateOf(marker.Need);
+            marker.SiteState = state;
+            if (state == AreaUnlockState.Available)
+            {
+                marker.Text.text = FormatKey(SiteAvailableKey, "+ " + name, name, Format(unlock.Price));
+                marker.Text.color = k_AvailableSiteTextColor;
+                marker.Background.color = AreaUnlockScreen.AccentOf(marker.Need);
+                marker.Pulse = waveLoop.State == WaveState.AwaitingWave;
+            }
+            else
+            {
+                marker.Text.text = FormatKey(SiteLockedKey, name, name, unlock.AfterWave.ToString(CultureInfo.InvariantCulture));
+                marker.Text.color = k_LockedSiteTextColor;
+                marker.Background.color = k_LockedSiteColor;
+                marker.Pulse = false;
+            }
+        }
+
+        string FormatKey(string key, string fallback, params object[] values)
+        {
+            var format = Localized(key);
+            if (string.IsNullOrEmpty(format)) return fallback;
+            try
+            {
+                return string.Format(format, values);
+            }
+            catch (FormatException)
+            {
+                return format;
             }
         }
 
@@ -257,6 +345,12 @@ namespace Multikulti.UI
                     marker.Rect.gameObject.SetActive(visible);
                 if (visible)
                     marker.Rect.anchoredPosition = local;
+
+                // Gentle pulse of an available site: "you can come back here" (UI handoff S1).
+                var scale = marker.Pulse
+                    ? 1f + PulseScale * (0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * PulseSpeed))
+                    : 1f;
+                marker.Rect.localScale = new Vector3(scale, scale, 1f);
             }
         }
 
@@ -332,7 +426,11 @@ namespace Multikulti.UI
             pill.pivot = new Vector2(0.5f, 0f);
             var text = CreateText("Label", pill, Mathf.RoundToInt(fontSize * 0.75f), FontStyle.Bold,
                 isSite ? k_SiteTextColor : k_ValueColor);
-            return new Marker { Rect = pill, Text = text, Need = need, IsSite = isSite, Building = building, Point = point };
+            return new Marker
+            {
+                Rect = pill, Text = text, Need = need, IsSite = isSite, Building = building, Point = point,
+                Background = pill.GetComponent<Image>()
+            };
         }
 
         RectTransform CreatePill(string name, Transform parent, Color color, float height, bool fitWidth = true, int padding = 20)
