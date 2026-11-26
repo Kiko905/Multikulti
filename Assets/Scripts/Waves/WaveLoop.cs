@@ -364,6 +364,13 @@ namespace Multikulti.Waves
                 Debug.Log($"Wave {Machine.Wave}/{Machine.WaveCount} complete, all scripted waves finished");
         }
 
+        /// <summary>
+        /// Forecast of the next wave (SCRUM-22): needs and volumes of the wave Start Wave would start, without LOCKED
+        /// needs. Meant for AwaitingWave (shown in "Čaká na vlnu"); null when no wave is left.
+        /// </summary>
+        public WaveForecast NextWaveForecast() =>
+            Machine.HasNextWave ? WaveForecast.For(CurrentWave(), IsNeedLocked) : null;
+
         WaveDefinition CurrentWave()
         {
             var waves = WaveConfig.Current.Waves;
