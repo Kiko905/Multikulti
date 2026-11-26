@@ -40,6 +40,7 @@ namespace Multikulti.Config
         [SerializeField] UnlockSettings unlocks = new UnlockSettings();
         [SerializeField] SpeedUpSettings speed_up = new SpeedUpSettings();
         [SerializeField] SuddenRushSettings sudden_rush = new SuddenRushSettings();
+        [SerializeField] ResortValueSettings resort_value = new ResortValueSettings();
         [SerializeField] WaveDefinition[] waves = Array.Empty<WaveDefinition>();
 
         public int SchemaVersion => schema_version;
@@ -52,6 +53,7 @@ namespace Multikulti.Config
         public UnlockSettings Unlocks => unlocks;
         public SpeedUpSettings SpeedUp => speed_up;
         public SuddenRushSettings SuddenRush => sudden_rush;
+        public ResortValueSettings ResortValue => resort_value;
         /// <summary>Scripted waves, wave 1 first (build document §4.8).</summary>
         public IReadOnlyList<WaveDefinition> Waves => waves;
 
@@ -149,6 +151,12 @@ namespace Multikulti.Config
 
             RequirePositive(problems, "unlocks.pool_price", unlocks.PoolPrice);
             RequirePositive(problems, "unlocks.bungalows_price", unlocks.BungalowsPrice);
+
+            // SCRUM-56: Resort Value only grows, so every building and every rating is worth something.
+            RequirePositive(problems, "resort_value.building_base", resort_value.BuildingBase);
+            RequireCount(problems, "resort_value.per_rating", resort_value.PerRating, RatingCount);
+            RequireNoPlaceholders(problems, "resort_value.per_rating", resort_value.PerRating);
+            RequireAscending(problems, "resort_value.per_rating", resort_value.PerRating);
 
             // SCRUM-28: exactly 8 scripted waves; finishing a wave unlocks the next, larger one.
             if (waves.Length != ScriptedWaveCount)
@@ -378,6 +386,23 @@ namespace Multikulti.Config
         public IReadOnlyList<int> CapacityByLevel => capacity_by_level;
         /// <summary>Coins price of each upgrade; index 0 is level 1 → 2.</summary>
         public IReadOnlyList<int> UpgradePrices => upgrade_prices;
+    }
+
+    /// <summary>
+    /// Resort Value (SCRUM-56, build document §5.5): the status of the resort, it only grows. A building is worth
+    /// building_base (a bought area: its unlock price) plus every upgrade paid for it; every finished wave adds
+    /// per_rating of its rating.
+    /// </summary>
+    [Serializable]
+    public sealed class ResortValueSettings
+    {
+        [SerializeField] int building_base;
+        [SerializeField] int[] per_rating = Array.Empty<int>();
+
+        /// <summary>Resort Value of a level 1 building the resort starts with (Reception, Beach Bar, Restaurant).</summary>
+        public int BuildingBase => building_base;
+        /// <summary>Resort Value a finished wave adds, per rating, same order as the rating thresholds.</summary>
+        public IReadOnlyList<int> PerRating => per_rating;
     }
 
     /// <summary>Area Unlocks and debut waves (SCRUM-51, SCRUM-54).</summary>
