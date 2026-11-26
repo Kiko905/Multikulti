@@ -41,6 +41,7 @@ namespace Multikulti.Config
         [SerializeField] SpeedUpSettings speed_up = new SpeedUpSettings();
         [SerializeField] SuddenRushSettings sudden_rush = new SuddenRushSettings();
         [SerializeField] ResortValueSettings resort_value = new ResortValueSettings();
+        [SerializeField] RewardedVideoSettings rewarded_video = new RewardedVideoSettings();
         [SerializeField] WaveDefinition[] waves = Array.Empty<WaveDefinition>();
 
         public int SchemaVersion => schema_version;
@@ -54,6 +55,7 @@ namespace Multikulti.Config
         public SpeedUpSettings SpeedUp => speed_up;
         public SuddenRushSettings SuddenRush => sudden_rush;
         public ResortValueSettings ResortValue => resort_value;
+        public RewardedVideoSettings RewardedVideo => rewarded_video;
         /// <summary>Scripted waves, wave 1 first (build document §4.8).</summary>
         public IReadOnlyList<WaveDefinition> Waves => waves;
 
@@ -148,6 +150,10 @@ namespace Multikulti.Config
             if (speed_up.ServiceTimeMultiplier <= 0f || speed_up.ServiceTimeMultiplier >= 1f)
                 problems.Add("speed_up.service_time_multiplier must be between 0 and 1.");
             RequirePositive(problems, "speed_up.max_per_building_per_wave", speed_up.MaxPerBuildingPerWave);
+
+            // SCRUM-58: a watched video gives Energy, and only a limited number of videos per wave.
+            RequirePositive(problems, "rewarded_video.energy_reward", rewarded_video.EnergyReward);
+            RequirePositive(problems, "rewarded_video.max_per_wave", rewarded_video.MaxPerWave);
 
             RequirePositive(problems, "unlocks.pool_price", unlocks.PoolPrice);
             RequirePositive(problems, "unlocks.bungalows_price", unlocks.BungalowsPrice);
@@ -437,6 +443,19 @@ namespace Multikulti.Config
         /// <summary>Factor applied to service_time while the boost runs (0.5 = half the time).</summary>
         public float ServiceTimeMultiplier => service_time_multiplier;
         public int MaxPerBuildingPerWave => max_per_building_per_wave;
+    }
+
+    /// <summary>Rewarded video offered instead of a Speed Up the player cannot afford (SCRUM-58).</summary>
+    [Serializable]
+    public sealed class RewardedVideoSettings
+    {
+        [SerializeField] int energy_reward;
+        [SerializeField] int max_per_wave;
+
+        /// <summary>Energy for a video watched to the end.</summary>
+        public int EnergyReward => energy_reward;
+        /// <summary>Videos with a reward per wave.</summary>
+        public int MaxPerWave => max_per_wave;
     }
 
     /// <summary>Mini-event Sudden rush (SCRUM-60).</summary>

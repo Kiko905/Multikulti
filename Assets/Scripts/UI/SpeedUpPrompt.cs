@@ -9,6 +9,7 @@ namespace Multikulti.UI
     /// Offer of the Energy boost Speed Up (SCRUM-57): for every overloaded building a row
     /// "Beach Bar is overloaded" with a Speed Up button and its Energy price. Without enough Energy the button is
     /// disabled and the row shows how much Energy is missing. A running boost shows its remaining seconds.
+    /// Without enough Energy the button offers a voluntary rewarded video instead, when one is available (SCRUM-58).
     ///
     /// Shown only in WaveActive. Added to the WaveLoop object at runtime, so the scene does not change.
     /// Graybox IMGUI until the S2 art.
@@ -21,6 +22,7 @@ namespace Multikulti.UI
 
         WaveLoop m_Loop;
         SpeedUpService m_Service;
+        RewardedVideoService m_Video;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         static void Install()
@@ -32,7 +34,11 @@ namespace Multikulti.UI
 
         void Awake() => m_Loop = GetComponent<WaveLoop>();
 
-        void Start() => m_Service = GetComponent<SpeedUpService>();
+        void Start()
+        {
+            m_Service = GetComponent<SpeedUpService>();
+            m_Video = GetComponent<RewardedVideoService>();
+        }
 
         void OnGUI()
         {
@@ -75,16 +81,30 @@ namespace Multikulti.UI
         void DrawOffer(Building building)
         {
             var block = m_Service.BlockOf(building);
+            // SCRUM-58: without enough Energy the button offers a voluntary rewarded video instead of the boost.
+            var video = block == SpeedUpBlock.NotEnoughEnergy ? m_Video : null;
+            var offerVideo = video != null && video.CanWatch(building);
+            var playing = video != null && video.IsPlaying;
+
             GUILayout.BeginHorizontal(GUILayout.Height(RowHeight - 4f));
-            var text = block == SpeedUpBlock.NotEnoughEnergy
-                ? $"{building.name} is overloaded\n<size=10>Missing: {m_Service.MissingEnergy} Energy</size>"
-                : $"{building.name} is overloaded";
+            var text = block != SpeedUpBlock.NotEnoughEnergy ? $"{building.name} is overloaded"
+                : offerVideo ? $"{building.name} is overloaded\n<size=10>Out of Energy: watch a video for +{video.EnergyReward}</size>"
+                : playing ? $"{building.name} is overloaded\n<size=10>Video playing, Energy comes after it</size>"
+                : $"{building.name} is overloaded\n<size=10>Missing: {m_Service.MissingEnergy} Energy</size>";
             GUILayout.Label(text, RichLabel(12));
 
-            GUI.enabled = block == SpeedUpBlock.None;
-            if (GUILayout.Button($"Speed Up ({m_Service.Rules.EnergyCost})", GUILayout.Width(110f), GUILayout.Height(28f)))
-                m_Service.TrySpeedUp(building);
-            GUI.enabled = true;
+            if (offerVideo)
+            {
+                if (GUILayout.Button($"Watch ad (+{video.EnergyReward})", GUILayout.Width(110f), GUILayout.Height(28f)))
+                    video.TryWatch(building);
+            }
+            else
+            {
+                GUI.enabled = block == SpeedUpBlock.None;
+                if (GUILayout.Button($"Speed Up ({m_Service.Rules.EnergyCost})", GUILayout.Width(110f), GUILayout.Height(28f)))
+                    m_Service.TrySpeedUp(building);
+                GUI.enabled = true;
+            }
             GUILayout.EndHorizontal();
         }
 
