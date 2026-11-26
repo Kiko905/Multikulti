@@ -66,6 +66,12 @@
     "max_per_building_per_wave": 1
   },
 
+  "rewarded_video": {
+    "_source": "SCRUM-58, build document §4.6 and §5.7: when the player cannot afford a Speed Up, the game offers a voluntary rewarded video instead; energy_reward is Energy for a video watched to the end (one Speed Up), max_per_wave limits the videos with a reward per wave",
+    "energy_reward": 3,
+    "max_per_wave": 1
+  },
+
   "sudden_rush": {
     "_source": "SCRUM-60; time_s is when the rush starts within the arrival phase",
     "wave": 2,

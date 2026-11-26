@@ -14,6 +14,7 @@ namespace Multikulti.UI
     /// to the only building without one, which is the building of the rush (WorkerRoster.ChooseTarget).
     /// Use Energy to serve faster starts the Energy boost Speed Up at the building of the rush (SCRUM-57); the button
     /// is disabled when the boost is blocked, e.g. without enough Energy or when the building already used it.
+    /// Without enough Energy it becomes Watch ad, a voluntary rewarded video for Energy (SCRUM-58).
     ///
     /// Added to the WaveLoop object at runtime, so the scene does not change. Graybox IMGUI until the S2 art.
     /// </summary>
@@ -82,7 +83,18 @@ namespace Multikulti.UI
             if (GUILayout.Button("Move Worker here", GUILayout.Height(32f)))
                 MoveWorkerHere();
             var speedUp = GetComponent<SpeedUpService>();
-            if (speedUp != null)
+            var video = GetComponent<RewardedVideoService>();
+            if (speedUp != null && video != null && speedUp.BlockOf(m_Target) == SpeedUpBlock.NotEnoughEnergy &&
+                (video.CanWatch(m_Target) || video.IsPlaying))
+            {
+                // SCRUM-58: without Energy a voluntary rewarded video instead; the prompt stays for the boost after it.
+                GUI.enabled = !video.IsPlaying;
+                if (GUILayout.Button(video.IsPlaying ? "Video playing" : $"Watch ad (+{video.EnergyReward} Energy)",
+                        GUILayout.Height(32f)))
+                    video.TryWatch(m_Target);
+                GUI.enabled = true;
+            }
+            else if (speedUp != null)
             {
                 GUI.enabled = speedUp.CanSpeedUp(m_Target);
                 if (GUILayout.Button($"Use Energy ({speedUp.Rules.EnergyCost})", GUILayout.Height(32f)) &&
