@@ -17,6 +17,16 @@ namespace Multikulti.Config
         public const string OverrideFileName = "wave_config.json";
         public const int SupportedSchemaVersion = 1;
         public const int RatingCount = 6;
+        /// <summary>Number of scripted waves in the prototype (SCRUM-28, build document §4.2).</summary>
+        public const int ScriptedWaveCount = 8;
+        /// <summary>
+        /// How far the volume of a debuting need may be from debut_need_volume_ratio (SCRUM-54, "~50 %").
+        /// 0.1 lets the premium Ocean View debut lower (10 of ~24 = 42 %) and still fails a forgotten soft debut.
+        /// </summary>
+        public const float DebutVolumeTolerance = 0.1f;
+
+        // Needs of a wave in the same order as the columns of the wave table (build document §4.8).
+        static readonly string[] k_NeedNames = { "rooms", "drinks", "food", "relax", "ocean_view" };
 
         static WaveConfig s_Current;
 
@@ -30,6 +40,8 @@ namespace Multikulti.Config
         [SerializeField] UnlockSettings unlocks = new UnlockSettings();
         [SerializeField] SpeedUpSettings speed_up = new SpeedUpSettings();
         [SerializeField] SuddenRushSettings sudden_rush = new SuddenRushSettings();
+        [SerializeField] ResortValueSettings resort_value = new ResortValueSettings();
+        [SerializeField] RewardedVideoSettings rewarded_video = new RewardedVideoSettings();
         [SerializeField] WaveDefinition[] waves = Array.Empty<WaveDefinition>();
 
         public int SchemaVersion => schema_version;
@@ -42,6 +54,8 @@ namespace Multikulti.Config
         public UnlockSettings Unlocks => unlocks;
         public SpeedUpSettings SpeedUp => speed_up;
         public SuddenRushSettings SuddenRush => sudden_rush;
+        public ResortValueSettings ResortValue => resort_value;
+        public RewardedVideoSettings RewardedVideo => rewarded_video;
         /// <summary>Scripted waves, wave 1 first (build document §4.8).</summary>
         public IReadOnlyList<WaveDefinition> Waves => waves;
 
@@ -130,18 +144,98 @@ namespace Multikulti.Config
             RequireCount(problems, "buildings.upgrade_prices", buildings.UpgradePrices, buildings.CapacityByLevel.Count - 1);
             RequireNoPlaceholders(problems, "buildings.upgrade_prices", buildings.UpgradePrices);
 
+            // SCRUM-57: the boost costs Energy, lasts some seconds and shortens service_time (0 < multiplier < 1).
+            RequirePositive(problems, "speed_up.energy_cost", speed_up.EnergyCost);
+            RequirePositive(problems, "speed_up.duration_s", speed_up.DurationSeconds);
+            if (speed_up.ServiceTimeMultiplier <= 0f || speed_up.ServiceTimeMultiplier >= 1f)
+                problems.Add("speed_up.service_time_multiplier must be between 0 and 1.");
+            RequirePositive(problems, "speed_up.max_per_building_per_wave", speed_up.MaxPerBuildingPerWave);
+
+            // SCRUM-58: a watched video gives Energy, and only a limited number of videos per wave.
+            RequirePositive(problems, "rewarded_video.energy_reward", rewarded_video.EnergyReward);
+            RequirePositive(problems, "rewarded_video.max_per_wave", rewarded_video.MaxPerWave);
+
             RequirePositive(problems, "unlocks.pool_price", unlocks.PoolPrice);
             RequirePositive(problems, "unlocks.bungalows_price", unlocks.BungalowsPrice);
 
-            if (waves.Length == 0)
-                problems.Add("waves is empty.");
+            // SCRUM-56: Resort Value only grows, so every building and every rating is worth something.
+            RequirePositive(problems, "resort_value.building_base", resort_value.BuildingBase);
+            RequireCount(problems, "resort_value.per_rating", resort_value.PerRating, RatingCount);
+            RequireNoPlaceholders(problems, "resort_value.per_rating", resort_value.PerRating);
+            RequireAscending(problems, "resort_value.per_rating", resort_value.PerRating);
+
+            // SCRUM-28: exactly 8 scripted waves; finishing a wave unlocks the next, larger one.
+            if (waves.Length != ScriptedWaveCount)
+                problems.Add($"waves has {waves.Length} waves, expected {ScriptedWaveCount} scripted waves.");
             for (var i = 0; i < waves.Length; i++)
             {
                 if (waves[i].Wave != i + 1)
                     problems.Add($"waves[{i}].wave is {waves[i].Wave}, expected {i + 1}.");
+                if (waves[i].TotalUnits <= 0)
+                    problems.Add($"wave {i + 1} has no units.");
+                if (i > 0 && waves[i].TotalUnits <= waves[i - 1].TotalUnits)
+                    problems.Add($"wave {i + 1} has {waves[i].TotalUnits} units, " +
+                                 $"it must be larger than wave {i} ({waves[i - 1].TotalUnits} units).");
             }
 
+            // SCRUM-54: a new need debuts softly in the first wave after its unlock (growth rules 2 and 3).
+            RequirePositive(problems, "unlocks.debut_need_volume_ratio", unlocks.DebutNeedVolumeRatio);
+            CheckDebutWave(problems, unlocks.PoolAfterWave + 1, 3);
+            CheckDebutWave(problems, unlocks.BungalowsAfterWave + 1, 4);
+
             return problems;
+        }
+
+        /// <summary>True for the first wave after an unlock, in which a new need debuts (SCRUM-54).</summary>
+        public bool IsDebutWave(int wave) =>
+            wave == unlocks.PoolAfterWave + 1 || wave == unlocks.BungalowsAfterWave + 1;
+
+        /// <summary>
+        /// SCRUM-54, build document "Pravidlá rastu":
+        /// rule 2 — the new need is not in any earlier wave and in its debut wave has about debut_need_volume_ratio
+        /// of the volume of an established need (the average of the other needs of that wave);
+        /// rule 3 — in the debut wave the other needs do not grow, they keep the values of the previous wave.
+        /// </summary>
+        void CheckDebutWave(List<string> problems, int debutWave, int newNeed)
+        {
+            var name = k_NeedNames[newNeed];
+            if (debutWave < 2 || debutWave > waves.Length)
+            {
+                problems.Add($"debut wave of {name} is {debutWave}, outside the {waves.Length} scripted waves.");
+                return;
+            }
+
+            for (var i = 0; i < debutWave - 1; i++)
+            {
+                if (waves[i].Units(newNeed) > 0)
+                    problems.Add($"{name} is in wave {i + 1}, before its debut wave {debutWave}.");
+            }
+
+            var debut = waves[debutWave - 1];
+            var previous = waves[debutWave - 2];
+            if (debut.Units(newNeed) <= 0)
+            {
+                problems.Add($"{name} has no units in its debut wave {debutWave}.");
+                return;
+            }
+
+            var established = 0;
+            var sum = 0;
+            for (var need = 0; need < k_NeedNames.Length; need++)
+            {
+                if (need == newNeed || previous.Units(need) == 0) continue;
+                if (debut.Units(need) > previous.Units(need))
+                    problems.Add($"{k_NeedNames[need]} grows in debut wave {debutWave} " +
+                                 $"({previous.Units(need)} → {debut.Units(need)}); it must keep the value of wave {debutWave - 1}.");
+                established++;
+                sum += debut.Units(need);
+            }
+
+            if (established == 0) return;
+            var ratio = debut.Units(newNeed) / (sum / (float)established);
+            if (Math.Abs(ratio - unlocks.DebutNeedVolumeRatio) > DebutVolumeTolerance)
+                problems.Add($"{name} has {debut.Units(newNeed)} units in debut wave {debutWave}, {ratio:P0} of an " +
+                             $"established need; expected about {unlocks.DebutNeedVolumeRatio:P0}.");
         }
 
         static void RequirePositive(List<string> problems, string name, float value)
@@ -300,6 +394,23 @@ namespace Multikulti.Config
         public IReadOnlyList<int> UpgradePrices => upgrade_prices;
     }
 
+    /// <summary>
+    /// Resort Value (SCRUM-56, build document §5.5): the status of the resort, it only grows. A building is worth
+    /// building_base (a bought area: its unlock price) plus every upgrade paid for it; every finished wave adds
+    /// per_rating of its rating.
+    /// </summary>
+    [Serializable]
+    public sealed class ResortValueSettings
+    {
+        [SerializeField] int building_base;
+        [SerializeField] int[] per_rating = Array.Empty<int>();
+
+        /// <summary>Resort Value of a level 1 building the resort starts with (Reception, Beach Bar, Restaurant).</summary>
+        public int BuildingBase => building_base;
+        /// <summary>Resort Value a finished wave adds, per rating, same order as the rating thresholds.</summary>
+        public IReadOnlyList<int> PerRating => per_rating;
+    }
+
     /// <summary>Area Unlocks and debut waves (SCRUM-51, SCRUM-54).</summary>
     [Serializable]
     public sealed class UnlockSettings
@@ -332,6 +443,19 @@ namespace Multikulti.Config
         /// <summary>Factor applied to service_time while the boost runs (0.5 = half the time).</summary>
         public float ServiceTimeMultiplier => service_time_multiplier;
         public int MaxPerBuildingPerWave => max_per_building_per_wave;
+    }
+
+    /// <summary>Rewarded video offered instead of a Speed Up the player cannot afford (SCRUM-58).</summary>
+    [Serializable]
+    public sealed class RewardedVideoSettings
+    {
+        [SerializeField] int energy_reward;
+        [SerializeField] int max_per_wave;
+
+        /// <summary>Energy for a video watched to the end.</summary>
+        public int EnergyReward => energy_reward;
+        /// <summary>Videos with a reward per wave.</summary>
+        public int MaxPerWave => max_per_wave;
     }
 
     /// <summary>Mini-event Sudden rush (SCRUM-60).</summary>
@@ -368,5 +492,19 @@ namespace Multikulti.Config
         public int Food => food;
         public int Relax => relax;
         public int OceanView => ocean_view;
+
+        /// <summary>All units of the wave (sum over every need); "jednotky vlny" for the reward (SCRUM-45).</summary>
+        public int TotalUnits => rooms + drinks + food + relax + ocean_view;
+
+        /// <summary>Units of one need by its column index: 0 rooms, 1 drinks, 2 food, 3 relax, 4 ocean_view.</summary>
+        public int Units(int need) => need switch
+        {
+            0 => rooms,
+            1 => drinks,
+            2 => food,
+            3 => relax,
+            4 => ocean_view,
+            _ => 0
+        };
     }
 }

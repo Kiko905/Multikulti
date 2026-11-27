@@ -72,6 +72,18 @@ namespace Multikulti.Waves
         }
 
         /// <summary>
+        /// The app starts with a wave that was closed while paused (SCRUM-27): AwaitingWave → WavePaused in the
+        /// saved wave. Only right after start, before any wave; then Resume continues the wave.
+        /// </summary>
+        public void RestorePaused(int wave)
+        {
+            if (wave < 1 || wave > WaveCount) throw new ArgumentOutOfRangeException(nameof(wave));
+            if (State != WaveState.AwaitingWave || Wave != 1) ThrowIllegal(WaveState.WavePaused);
+            Wave = wave;
+            MoveTo(WaveState.WavePaused, WaveState.AwaitingWave);
+        }
+
+        /// <summary>
         /// Arrival is closed (wave_timer elapsed) and every need has backlog 0: WaveActive → WaveResolving.
         /// The caller checks both conditions (SCRUM-25); wave_timer alone never ends the wave.
         /// </summary>

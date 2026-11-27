@@ -82,6 +82,13 @@ namespace Multikulti.Waves
             foreach (var waits in m_ByNeed) waits.Clear();
         }
 
+        /// <summary>Puts back one wait of a saved wave (SCRUM-27).</summary>
+        public void Restore(UnitWait wait)
+        {
+            m_All.Add(wait);
+            m_ByNeed[(int)wait.Need].Add(wait.WaitingSeconds);
+        }
+
         /// <summary>Records a unit that was just seated. A unit without SeatedAt is ignored.</summary>
         public void Record(Unit unit)
         {

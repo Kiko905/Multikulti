@@ -73,13 +73,19 @@ namespace Multikulti.UI
         /// Fills rows with the active needs of the wave, in the order of Needs.
         /// A need is active when the wave has demand for it or when units of it arrived anyway.
         /// A building added after Start Wave counts from zero.
+        /// A LOCKED need (isLocked returns true, SCRUM-34) is never shown.
+        /// extraDemand adds Sudden rush units to the total right when the rush starts (SCRUM-60: Drinks 9/16 → 9/22).
         /// </summary>
-        public void Collect(WaveDefinition wave, IReadOnlyList<Building> buildings, List<NeedProgress> rows)
+        public void Collect(WaveDefinition wave, IReadOnlyList<Building> buildings, List<NeedProgress> rows,
+            Func<Need, bool> isLocked = null, Func<Need, int> extraDemand = null)
         {
             rows.Clear();
             foreach (var need in Needs)
             {
+                if (isLocked != null && isLocked(need)) continue;
+
                 var demand = wave != null ? Demand(wave, need) : 0;
+                if (extraDemand != null) demand += extraDemand(need);
                 var arrived = 0;
                 var served = 0;
                 var hasWorker = false;

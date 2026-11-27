@@ -110,6 +110,23 @@ namespace Multikulti.Buildings
             FillSeats(now);
         }
 
+        /// <summary>
+        /// Puts back the units of a saved wave (SCRUM-27): counts, seated units with their service progress
+        /// and the backlog in its order. Raises no events — nothing new happens, the wave only continues.
+        /// </summary>
+        public void Restore(int arrived, int served, IEnumerable<Unit> seated, IEnumerable<Unit> backlog)
+        {
+            m_Seated.Clear();
+            m_Backlog.Clear();
+            ArrivedCount = arrived;
+            ServedCount = served;
+            foreach (var unit in seated) m_Seated.Add(unit);
+            foreach (var unit in backlog) m_Backlog.Enqueue(unit);
+        }
+
+        /// <summary>Units waiting for a seat, first in line first.</summary>
+        public IEnumerable<Unit> Backlog => m_Backlog;
+
         public void AssertNoUnitLost()
         {
             var expected = ArrivedCount - ServedCount;

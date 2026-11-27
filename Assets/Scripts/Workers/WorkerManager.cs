@@ -10,6 +10,8 @@ namespace Multikulti.Workers
         [SerializeField] List<Building> buildings = new List<Building>();
         [SerializeField] WaveLoop waveLoop;
 
+        int[] m_Layout;
+
         public WorkerRoster Roster { get; private set; }
         public IReadOnlyList<Building> Buildings => buildings;
 
@@ -21,12 +23,20 @@ namespace Multikulti.Workers
                 waveLoop = FindAnyObjectByType<WaveLoop>();
         }
 
-        void Start() => Refresh();
+        void Start()
+        {
+            m_Layout = Layout();
+            if (waveLoop != null && waveLoop.Machine != null)
+                waveLoop.Machine.StateChanged += OnWaveStateChanged;
+            Refresh();
+        }
 
         void OnDestroy()
         {
             if (Roster != null)
                 Roster.WorkerMoved -= OnWorkerMoved;
+            if (waveLoop != null && waveLoop.Machine != null)
+                waveLoop.Machine.StateChanged -= OnWaveStateChanged;
         }
 
         public void AddBuilding(Building building)
@@ -60,12 +70,54 @@ namespace Multikulti.Workers
             return Roster.Move(worker, target);
         }
 
-        void OnWorkerMoved(int worker, int from, int to) => Refresh();
+        /// <summary>Building index of every Worker, for the wave save (SCRUM-27).</summary>
+        public int[] CaptureLayout() => Layout();
+
+        /// <summary>Puts the Workers back on the saved buildings (SCRUM-27); false when the layout does not fit the scene.</summary>
+        public bool RestoreLayout(int[] layout)
+        {
+            if (!Roster.RestoreLayout(layout)) return false;
+            m_Layout = Layout();
+            Refresh();
+            return true;
+        }
+
+        void OnWorkerMoved(int worker, int from, int to)
+        {
+            m_Layout = Layout();
+            Refresh();
+        }
 
         void Refresh()
         {
             for (var i = 0; i < buildings.Count; i++)
                 buildings[i].HasWorker = Roster.HasWorker(i);
+        }
+
+        void OnWaveStateChanged(WaveState previous, WaveState next)
+        {
+            if (next != WaveState.WaveIncoming) return;
+
+            var current = Layout();
+            Debug.Assert(SameLayout(current, m_Layout),
+                $"Wave {waveLoop.Wave}: Workers changed between waves without a move: [{string.Join(", ", m_Layout)}] → [{string.Join(", ", current)}]");
+            Debug.Log($"Wave {waveLoop.Wave} starts with Workers on [{string.Join(", ", current)}]");
+        }
+
+        int[] Layout()
+        {
+            var layout = new int[Roster.WorkerCount];
+            for (var w = 0; w < layout.Length; w++)
+                layout[w] = Roster.BuildingOf(w);
+            return layout;
+        }
+
+        static bool SameLayout(int[] a, int[] b)
+        {
+            if (a == null || b == null || a.Length != b.Length) return false;
+            for (var i = 0; i < a.Length; i++)
+                if (a[i] != b[i]) return false;
+            return true;
         }
     }
 }

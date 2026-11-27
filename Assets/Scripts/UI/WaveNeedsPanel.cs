@@ -23,19 +23,32 @@ namespace Multikulti.UI
     /// space kept for the top bar (topOffset), and every row has the same fixed size. A need that joins in a later
     /// wave is added at the bottom, so the rows above it never move and the panel only grows downwards.
     /// In the editor and in development builds the panel warns once if it covers a building.
+    ///
+    /// Need states (SCRUM-33): a need in BOTTLENECK gets an amber row and the warning "queue growing";
+    /// in RECOVERING a green row and the positive variant "catching up", so the two never look alike and
+    /// RECOVERING does not look finished. The state column has a fixed width, so a warning never moves the row.
+    /// The short guest feedback toast for the same change is GuestFeedbackToasts.
     /// </summary>
     public sealed class WaveNeedsPanel : MonoBehaviour
     {
         const string TableName = "UI";
         const string WorkerKey = "wave_needs.worker";
+        const string QueueGrowingKey = "wave_needs.queue_growing";
+        const string CatchingUpKey = "wave_needs.catching_up";
 
         static readonly Color k_TextColor = Color.white;
         static readonly Color k_NoBuildingColor = new Color(1f, 1f, 1f, 0.45f);
         static readonly Color k_WorkerColor = new Color(1f, 0.82f, 0.3f);
         static readonly Color k_BackgroundColor = new Color(0f, 0f, 0f, 0.6f);
+        static readonly Color k_BottleneckRowColor = new Color(0.85f, 0.42f, 0.08f, 0.55f);
+        static readonly Color k_RecoveringRowColor = new Color(0.1f, 0.55f, 0.38f, 0.55f);
+        static readonly Color k_BottleneckTextColor = new Color(1f, 0.78f, 0.4f);
+        static readonly Color k_RecoveringTextColor = new Color(0.6f, 1f, 0.78f);
 
         [SerializeField] WaveLoop waveLoop;
         [SerializeField] WorkerManager workers;
+        [SerializeField, Tooltip("Empty = the NeedStateBoard in the scene. Without it the panel shows no need states.")]
+        NeedStateBoard stateBoard;
         [SerializeField, Min(8)] int fontSize = 32;
         [SerializeField, Min(0f), Tooltip("Distance from the right edge of the safe area.")]
         float margin = 32f;
@@ -50,6 +63,10 @@ namespace Multikulti.UI
         LocalizedString m_WorkerLabel;
         LocalizedString.ChangeHandler m_WorkerLabelChanged;
         string m_WorkerText = string.Empty;
+        readonly List<(LocalizedString Text, LocalizedString.ChangeHandler Handler)> m_StateLabels =
+            new List<(LocalizedString, LocalizedString.ChangeHandler)>();
+        string m_QueueGrowingText = string.Empty;
+        string m_CatchingUpText = string.Empty;
 
         GameObject m_Panel;
         RectTransform m_PanelRect;
@@ -67,6 +84,8 @@ namespace Multikulti.UI
                 waveLoop = FindAnyObjectByType<WaveLoop>();
             if (workers == null)
                 workers = FindAnyObjectByType<WorkerManager>();
+            if (stateBoard == null)
+                stateBoard = FindAnyObjectByType<NeedStateBoard>();
 
             BuildCanvas();
 
@@ -74,10 +93,39 @@ namespace Multikulti.UI
             m_WorkerLabelChanged = value =>
             {
                 m_WorkerText = value;
-                foreach (var row in m_Rows)
-                    row.Shown = null;
+                ForceRedraw();
             };
             m_WorkerLabel.StringChanged += m_WorkerLabelChanged;
+
+            ListenToStateLabel(QueueGrowingKey, value => m_QueueGrowingText = value);
+            ListenToStateLabel(CatchingUpKey, value => m_CatchingUpText = value);
+        }
+
+        void ListenToStateLabel(string key, Action<string> store)
+        {
+            var text = new LocalizedString(TableName, key);
+            LocalizedString.ChangeHandler handler = value =>
+            {
+                store(value);
+                ForceRedraw();
+            };
+            text.StringChanged += handler;
+            m_StateLabels.Add((text, handler));
+        }
+
+        void ForceRedraw()
+        {
+            foreach (var row in m_Rows)
+                row.Shown = null;
+        }
+
+        /// <summary>State shown on the row of a need (for tests): Ok when the row is hidden or has no warning.</summary>
+        public NeedState ShownState(Need need)
+        {
+            foreach (var row in m_Rows)
+                if (row.Need == need)
+                    return row.Root.activeSelf ? row.ShownState : NeedState.Ok;
+            return NeedState.Ok;
         }
 
         void Start()
@@ -102,6 +150,8 @@ namespace Multikulti.UI
                 waveLoop.Machine.StateChanged -= OnStateChanged;
             if (m_WorkerLabel != null)
                 m_WorkerLabel.StringChanged -= m_WorkerLabelChanged;
+            foreach (var (text, handler) in m_StateLabels)
+                text.StringChanged -= handler;
             foreach (var row in m_Rows)
                 row.Label.StringChanged -= row.LabelChanged;
         }
@@ -120,7 +170,7 @@ namespace Multikulti.UI
                 return;
             }
 
-            m_Progress.Collect(CurrentWave(), Buildings, m_Active);
+            m_Progress.Collect(CurrentWave(), Buildings, m_Active, waveLoop.IsNeedLocked, waveLoop.Release.ExtraDemand);
 
             // m_Rows and m_Active are both in WaveNeedsProgress.Needs order.
             var next = 0;
@@ -160,8 +210,10 @@ namespace Multikulti.UI
 
         void Show(Row row, NeedProgress progress)
         {
-            if (row.Shown.HasValue && row.Shown.Value.Equals(progress)) return;
+            var state = stateBoard != null ? stateBoard.StateOf(row.Need) : NeedState.Ok;
+            if (row.Shown.HasValue && row.Shown.Value.Equals(progress) && row.ShownState == state) return;
             row.Shown = progress;
+            row.ShownState = state;
 
             row.Count.text = $"{progress.Served}/{progress.Total}";
             row.Worker.text = progress.HasWorker ? m_WorkerText : string.Empty;
@@ -169,6 +221,24 @@ namespace Multikulti.UI
             var color = progress.HasBuilding ? k_TextColor : k_NoBuildingColor;
             row.Name.color = color;
             row.Count.color = color;
+
+            switch (state)
+            {
+                case NeedState.Bottleneck:
+                    row.Background.color = k_BottleneckRowColor;
+                    row.State.text = m_QueueGrowingText;
+                    row.State.color = k_BottleneckTextColor;
+                    break;
+                case NeedState.Recovering:
+                    row.Background.color = k_RecoveringRowColor;
+                    row.State.text = m_CatchingUpText;
+                    row.State.color = k_RecoveringTextColor;
+                    break;
+                default:
+                    row.Background.color = Color.clear;
+                    row.State.text = string.Empty;
+                    break;
+            }
         }
 
         // Keeps the panel out of the notch and the rounded corners in landscape.
@@ -322,10 +392,17 @@ namespace Multikulti.UI
 
             // Fixed column widths, so the numbers do not shift the row while they change.
             var badgeSize = Mathf.RoundToInt(fontSize * 0.8f);
-            var row = new Row(need, root.gameObject,
+            // Behind the whole row; tinted only while the need is in BOTTLENECK or RECOVERING (SCRUM-33).
+            var background = root.gameObject.AddComponent<Image>();
+            background.color = Color.clear;
+            background.raycastTarget = false;
+            layout.padding = new RectOffset(8, 8, 0, 0);
+
+            var row = new Row(need, root.gameObject, background,
                 CreateText("Need", root, font, fontSize, fontSize * 6.5f, TextAnchor.MiddleLeft),
                 CreateText("Count", root, font, fontSize, fontSize * 3.5f, TextAnchor.MiddleRight),
                 CreateText("Worker", root, font, badgeSize, badgeSize * 4.5f, TextAnchor.MiddleLeft),
+                CreateText("State", root, font, badgeSize, badgeSize * 7f, TextAnchor.MiddleLeft),
                 new LocalizedString(TableName, LabelKey(need)));
             row.Worker.color = k_WorkerColor;
 
@@ -373,26 +450,34 @@ namespace Multikulti.UI
 
         sealed class Row
         {
-            public Row(Need need, GameObject root, Text name, Text count, Text worker, LocalizedString label)
+            public Row(Need need, GameObject root, Image background, Text name, Text count, Text worker, Text state,
+                LocalizedString label)
             {
                 Need = need;
                 Root = root;
+                Background = background;
                 Name = name;
                 Count = count;
                 Worker = worker;
+                State = state;
                 Label = label;
             }
 
             public Need Need { get; }
             public GameObject Root { get; }
+            public Image Background { get; }
             public Text Name { get; }
             public Text Count { get; }
             public Text Worker { get; }
+            public Text State { get; }
             public LocalizedString Label { get; }
             public LocalizedString.ChangeHandler LabelChanged { get; set; }
 
             /// <summary>Values on screen; null forces the next Show to write the texts again.</summary>
             public NeedProgress? Shown { get; set; }
+
+            /// <summary>Need state on screen (SCRUM-33).</summary>
+            public NeedState ShownState { get; set; }
         }
     }
 }

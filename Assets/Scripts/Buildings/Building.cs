@@ -40,12 +40,36 @@ namespace Multikulti.Buildings
         void Awake()
         {
             var config = WaveConfig.Current;
+            level = Mathf.Clamp(level, 1, config.Buildings.CapacityByLevel.Count);
             var capacity = config.Buildings.CapacityByLevel[level - 1];
             Queue = new BuildingQueue(need, capacity, config.Service.ServiceTime)
             {
                 Utilization = UtilizationRules.For(m_HasWorker, config.Service)
             };
             Queue.AllServed += () => Debug.Log($"{need}: all {Queue.ServedCount} units served");
+        }
+        public Building CloneFor(Need newNeed, Vector3 position, string objectName)
+        {
+            var holder = new GameObject();
+            holder.SetActive(false);
+            var copy = Instantiate(this, position, transform.rotation, holder.transform);
+            copy.name = objectName;
+            copy.need = newNeed;
+            copy.level = 1;
+            copy.transform.SetParent(transform.parent, true);
+            Destroy(holder);
+            return copy;
+        }
+
+        public int Level => level;
+        public int MaxLevel => WaveConfig.Current.Buildings.CapacityByLevel.Count;
+        public bool IsMaxLevel => level >= MaxLevel;
+
+        public void LevelUp()
+        {
+            if (IsMaxLevel) throw new InvalidOperationException($"{need} is already at max level {MaxLevel}.");
+            level++;
+            Queue.SetCapacity(WaveConfig.Current.Buildings.CapacityByLevel[level - 1], Now);
         }
 
         void Update()
@@ -67,6 +91,7 @@ namespace Multikulti.Buildings
             m_Label.Clear();
             m_Label.Append(HasWorker ? "[Worker] " : "[ — ] ");
             m_Label.Append($"{Queue.Utilization:0.00}× ");
+            m_Label.Append($"L{level} ");
             m_Label.Append($"{need}: {Queue.Seated.Count}/{Queue.Capacity}, backlog {Queue.BacklogCount}");
             m_Label.Append($", served {Queue.ServedCount}/{Queue.ArrivedCount}");
             if (Queue.ArrivedCount > 0 && Queue.IsAllServed) m_Label.Append(" ✓");
